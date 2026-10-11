@@ -69,6 +69,24 @@ tailscale serve --bg --https=443 http://127.0.0.1:7788 # 테일넷 안에서만 
    토큰을 새로 갈려면 `--rotate`(브릿지가 재시작돼 열린 세션이 끝난다). QR 은 토큰이 든 비밀이니 찍은 뒤 `~/.frogterminal/login-qr.png` 를 지운다.
 3. 크롬 메뉴 → "설치 및 바로가기 만들기"로 앱처럼 쓴다. (`web/index.html` 의 manifest 링크에 `crossorigin="use-credentials"` 를 붙여 뒀다 — 없으면 크롬이 쿠키 없이 `/manifest.json` 을 받아 403 이 나고, 메뉴가 일반 바로가기로만 나온다.)
 
+## PC 의 PowerShell 창에서 붙기 — `frog`
+
+맥판은 tmux 라서 PC 터미널과 폰이 같은 세션에 같이 붙는다. 윈도우판은 브릿지가 세션을 들고 있으므로, PC 쪽도 `frog` 로 붙어야 폰과 같은 세션을 본다.
+**PowerShell 에서 그냥 `claude` 를 띄운 창은 폰에서 볼 수 없다**(ConPTY 는 만든 프로세스만 읽는다). 앞으로의 작업을 `frog` 로 시작하면 PC·폰이 한 세션을 같이 쓴다.
+
+```powershell
+frog                  # 지금 폴더(프로젝트 루트 아래)의 세션 — 없으면 만든다(시작 에이전트는 설정의 기본값)
+frog weather          # 프로젝트 이름으로
+frog weather codex    # claude · codex · shell
+frog -l               # 살아 있는 세션 목록
+```
+
+- 떼기: **Ctrl+]** — 세션은 산다(폰에서 이어 본다). 안에서 `exit` 하면 세션이 끝난다.
+- PC 창과 폰이 같이 붙으면 화면 크기는 **가장 작은 쪽**에 맞는다(tmux 와 같다). 폰이 떠나면 PC 크기로 돌아온다.
+- PC 창엔 스크롤백이 터미널 창 것을 쓰므로 붙을 때 보이는 화면만 받는다(웹은 기록까지).
+- 설치: `scripts\windows\frog.cmd` 를 PATH 의 폴더에 두거나(절대경로로 고쳐 복사), `function frog { & 'Y:\...\scripts\windows\frog.cmd' @args }` 를 프로필에.
+- 이미 떠 있는 창의 대화를 옮기려면 그 창을 닫고 `frog` 로 열어 `/resume` 한다.
+
 ## 운영
 
 - 로그: `~/.frogterminal/bridge.log` · 재시작: `pwsh -File scripts\windows\restart.ps1`(안의 세션도 끝난다) · 내리기: `... restart.ps1 -Stop`
@@ -101,7 +119,7 @@ Claude Code 훅 6개(Notification · Stop · UserPromptSubmit · SessionEnd · P
   codex 세션 · 재부팅 뒤 자동 기동은 **실측하지 않았다**.
 - 동시에 여러 개: 프로젝트마다 세션 하나 + 같은 프로젝트의 병렬 탭(`name@2~9`). 측정값은 Claude 1 + 셸 3 에서 브릿지 프로세스 트리가 약 +745 MB — Claude 하나당 약 0.6~0.7 GB 로 잡는다.
   폰 폭(900px 미만)은 한 번에 한 칸이고, 넓은 화면(PC·태블릿)은 격자로 여러 칸이 보인다.
-- 이미 떠 있는 다른 창(Windows Terminal·VS Code 의 Claude)은 브릿지가 붙잡을 수 없다 — ConPTY 는 만든 프로세스만 읽는다. 같은 대화를 이어 쓰려면 브릿지 세션에서 `/resume` 하고 원래 창은 닫는다(같은 대화를 두 곳에서 동시에 쓰지 않는다).
+- 이미 떠 있는 다른 창(Windows Terminal·VS Code 의 Claude)은 브릿지가 붙잡을 수 없다 — ConPTY 는 만든 프로세스만 읽는다. 앞으로는 `frog` 로 열고(위), 기존 대화는 `frog` 세션에서 `/resume` 한 뒤 원래 창을 닫는다(같은 대화를 두 곳에서 동시에 쓰지 않는다).
 - 폰에서 스와이프하면 Claude Code 같은 TUI 가 마우스 모드를 켜 둔 동안은 휠 이벤트가 그 앱으로 간다(브라우저 스크롤백이 안 움직인다). tmux 복사 모드 스크롤은 없다.
 - 확인 박스(「클로드로 켜기」)는 7초 폴링 때 사라진다(원본 동작) — 손이 느리면 다시 누른다.
 - 브라우저 패널(헤드리스 크롬)·미리보기 서비스 목록의 윈도우 분기는 코드만 옮겼고 실서버로는 안 돌려 봤다.

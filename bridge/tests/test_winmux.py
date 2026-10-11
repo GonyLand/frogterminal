@@ -240,6 +240,44 @@ async def test_attach_puts_snapshot_before_live_output_and_detach_stops_it():
     assert sub.queue.empty()
 
 
+async def test_two_screens_share_the_smallest_size_and_grow_back_when_the_small_one_leaves():
+    """PC 창(100x30)과 폰(40x20)이 같은 세션에 붙으면 가장 작은 쪽 — 폰이 떠나면 PC 크기로 되돌아온다(tmux 와 같다)."""
+    s = make_session(cols=100, rows=30)
+    loop = asyncio.get_running_loop()
+    pc, phone = winmux.Subscriber(loop), winmux.Subscriber(loop)
+    pc.size = (100, 30)
+    s.fit(pc)
+    s.attach(pc, with_history=False)
+    phone.size = (40, 20)
+    s.fit(phone)                                 # 붙기 전에 크기를 맞춘다(스냅샷이 그 크기로 그려지게)
+    s.attach(phone, with_history=False)
+    assert (s.cols, s.rows) == (40, 20) and s.pty.size == (20, 40)
+    s.set_size(phone, 40, 12)                    # 폰 키보드가 올라와 화면이 줄었다
+    assert (s.cols, s.rows) == (40, 12)
+    s.set_size(pc, 120, 40)                      # 큰 쪽이 커져도 작은 쪽을 넘지 않는다
+    assert (s.cols, s.rows) == (40, 12)
+    s.detach(phone)
+    assert (s.cols, s.rows) == (120, 40)
+    s.detach(pc)
+    assert (s.cols, s.rows) == (120, 40)         # 아무도 안 남으면 그대로 둔다
+
+
+def test_frog_strips_win32_input_mode_requests_even_when_split_across_chunks():
+    """세션 안 pwsh 의 ESC[?9001h 를 로컬 콘솔에 넘기면 키가 숫자 형식으로 바뀌어 Ctrl+] 를 못 알아본다(2026-10-12 실측)."""
+    import importlib.util
+    import pathlib
+    path = pathlib.Path(__file__).resolve().parents[2] / "scripts" / "windows" / "frog.py"
+    spec = importlib.util.spec_from_file_location("frog_script", path)
+    frog = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(frog)
+    f = frog.StripWin32InputMode()
+    assert f.feed(b"a\x1b[?9001hb\x1b[?9001lc") == b"abc"
+    assert f.feed(b"x\x1b[?90") == b"x"                       # 시퀀스가 둘로 쪼개져 왔다 — 앞부분은 붙들어 둔다
+    assert f.feed(b"01lY") == b"Y"
+    assert f.feed(b"\x1b[?2004h\x1b[31m") == b"\x1b[?2004h\x1b[31m"      # 다른 모드·색은 그대로 지나간다
+    assert f.feed(b"plain") == b"plain"
+
+
 async def test_slow_subscriber_is_dropped_not_buffered_forever(monkeypatch):
     monkeypatch.setattr(winmux, "MAX_QUEUE_BYTES", 100)
     loop = asyncio.get_running_loop()

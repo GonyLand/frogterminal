@@ -24,10 +24,12 @@ async def serve(request: web.Request, ws: web.WebSocketResponse, name: str, agen
     loop = asyncio.get_running_loop()
     argv, cwd = sessions.win_launch(name, agent=agent)
     session, created = await asyncio.to_thread(winmux.MUX.get_or_create, name, argv, cwd, cols, rows)
-    if not created:
-        await asyncio.to_thread(session.resize, cols, rows)   # 붙는 쪽 크기에 맞춘다(마지막 접속이 이긴다)
     sub = winmux.Subscriber(loop)
-    session.attach(sub, with_history=not reconnect)
+    sub.size = (cols, rows)
+    if not created:
+        await asyncio.to_thread(session.fit, sub)    # PC 창·폰이 같이 붙으면 가장 작은 화면에 맞춘다(스냅샷은 그 크기로 그린다)
+    # hist=0 — PC 의 frog 창: 직접 연 것이라 재접속 표시(re=1)는 못 쓰고(끈 세션 되살림 방지에 걸린다), 스크롤백은 터미널 창이 갖고 있어 보이는 화면만 받는다.
+    session.attach(sub, with_history=not (reconnect or request.query.get("hist") == "0"))
 
     async def pump_out() -> None:
         while (data := await sub.queue.get()) is not None:
@@ -54,7 +56,7 @@ async def serve(request: web.Request, ws: web.WebSocketResponse, name: str, agen
                         c, r = _clamp(int(ctrl["cols"])), _clamp(int(ctrl["rows"]))
                     except (KeyError, ValueError, TypeError):
                         continue                         # 망가진 resize 하나로 연결이 끊기면 안 된다
-                    await asyncio.to_thread(session.resize, c, r)
+                    await asyncio.to_thread(session.set_size, sub, c, r)
                 # compact(여러 칸 HUD 표시)·unmode(복사 모드 해제)는 윈도우판에 대응물이 없다
     finally:
         sub.closed = True

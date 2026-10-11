@@ -156,6 +156,7 @@ class Subscriber:
         self.pending = 0                     # 큐에 쌓인 바이트(루프 스레드에서만 만진다)
         self.overflowed = False
         self.closed = False
+        self.size: tuple[int, int] | None = None     # 이 화면이 바라는 (cols, rows) — 세션은 붙은 화면 중 가장 작은 쪽에 맞춘다
 
     def push(self, data: bytes | None) -> None:
         """아무 스레드에서나 부른다."""
@@ -313,6 +314,20 @@ class Session:
     def detach(self, sub: Subscriber) -> None:
         with self.lock:
             self.subscribers.discard(sub)
+        self.fit()                               # 작은 화면(폰)이 떠나면 남은 화면 크기로 되돌린다
+
+    def set_size(self, sub: Subscriber, cols: int, rows: int) -> None:
+        sub.size = (cols, rows)
+        self.fit(extra=sub)
+
+    def fit(self, extra: Subscriber | None = None) -> None:
+        """붙어 있는 화면(PC 창·폰)이 여럿이면 가장 작은 쪽에 맞춘다 — tmux 와 같다. 누구도 크기를 안 밝혔으면 그대로 둔다."""
+        with self.lock:
+            sizes = [s.size for s in self.subscribers if s.size and not s.closed]
+        if extra is not None and extra.size and extra not in self.subscribers:
+            sizes.append(extra.size)
+        if sizes:
+            self.resize(min(c for c, _ in sizes), min(r for _, r in sizes))
 
     # ── 브라우저 → 자식 ─────────────────────────────────────────────────
     def write(self, data: bytes | str) -> None:
