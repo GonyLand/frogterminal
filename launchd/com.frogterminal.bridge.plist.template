@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- frogterminal 브릿지 launchd 템플릿 — scripts/install_launchd.sh 가 __REPO__·__HOME__ 을 채워
+     ~/Library/LaunchAgents/com.frogterminal.bridge.plist 로 설치한다. tmux 세션은 브릿지와 무관하게
+     생존하므로 KeepAlive 재시작이 안전하다. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.frogterminal.bridge</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__REPO__/.venv/bin/python</string>
+    <string>-m</string>
+    <string>bridge.server</string>
+  </array>
+  <key>WorkingDirectory</key><string>__REPO__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key><string>__HOME__</string>
+    <!-- SHLVL 필수: Tailscale.app 바이너리는 GUI 겸 CLI 라서 SHLVL 유무로 "셸에서 실행됐나"를 판단한다.
+         없으면 CLI 대신 GUI 기동을 시도해 JSON 대신 에러 문장을 종료코드 0 으로 뱉고, Funnel 게이트가
+         판정불가로 기동을 거부한다. launchd 는 SHLVL 을 안 넘겨주므로 여기서 명시한다(값은 무관). -->
+    <key>SHLVL</key><string>1</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string>__HOME__/Library/Logs/frogterminal.out.log</string>
+  <key>StandardErrorPath</key><string>__HOME__/Library/Logs/frogterminal.err.log</string>
+</dict>
+</plist>

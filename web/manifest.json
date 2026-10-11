@@ -1,0 +1,14 @@
+{
+  "name": "frogterminal",
+  "short_name": "frogterminal",
+  "id": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0D0C",
+  "theme_color": "#0B0D0C",
+  "description": "맥의 진짜 터미널(tmux)을 어디서나 — 결재 인박스·파일 패널 포함",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

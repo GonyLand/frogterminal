@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.vercel
+.DS_Store
+# 파일 저장(원자적 교체)이 SIGKILL 로 끊겼을 때 남는 잔재
+*.frogtmp
+# 비밀값·토큰 — 저장소 어디에도 들어오지 않게(공개 배포 점검 2026-10-11)
+.env*
+*_token.json
+auth.json
+.venv

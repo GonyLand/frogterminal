@@ -1,0 +1,9 @@
+{
+  "_comment": "~/.frogterminal/bridge.json 으로 복사해 쓴다. 기동 때 한 번 읽고, 깨져 있으면 브릿지가 뜨지 않는다(fail-closed). 모든 키는 선택 — 파일이 없으면 토큰만으로 인증하고, 열기 범위·HUD 는 꺼진다.",
+  "allowedLogins": ["me@example.com"],
+  "allowedOrigins": ["https://my-mac.tailnet-name.ts.net"],
+  "tailscaleBin": "/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+  "openAnywhere": false,
+  "hudScript": null,
+  "defaultProjectsRoot": "~/projects"
+}

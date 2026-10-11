@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>frogterminal — 로그인</title>
+<!-- 인증 전에 나가는 유일한 화면. 외부 리소스 0, 스크립트 0 — 토큰을 묻는 폼 하나뿐이다.
+     문구는 서버가 정한 고정 문장만 {{error}} 자리에 들어온다(사용자 입력은 절대 아님). -->
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; min-height: 100%; background: #0B0D0C; color: #E6E8E6;
+               font: 15px/1.5 -apple-system, "Pretendard Variable", system-ui, sans-serif; }
+  main { max-width: 360px; margin: 18vh auto 0; padding: 0 20px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 6px; }
+  p { margin: 0 0 18px; color: #9AA09C; font-size: 14px; }
+  label { display: block; font-size: 13px; color: #9AA09C; margin-bottom: 6px; }
+  input { width: 100%; box-sizing: border-box; padding: 11px 12px; font: inherit; color: inherit;
+          background: #151917; border: 1px solid #2A302C; border-radius: 6px; }
+  input:focus { outline: none; border-color: #5BB974; }
+  button { margin-top: 12px; width: 100%; padding: 11px; font: inherit; font-weight: 600;
+           color: #0B0D0C; background: #5BB974; border: 0; border-radius: 6px; cursor: pointer; }
+  .error { color: #F28B82; font-size: 14px; margin: 0 0 12px; min-height: 1.5em; }
+  .hint { margin-top: 22px; font-size: 13px; color: #6F7672; }
+  code { font-family: ui-monospace, Menlo, monospace; color: #B8BFBA; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🐸 frogterminal</h1>
+  <p>이 기기에서 처음 열었습니다. 브릿지 토큰을 한 번 입력하면 기억합니다.</p>
+  <form method="post" action="/login" autocomplete="off">
+    <p class="error">{{error}}</p>
+    <label for="token">토큰</label>
+    <input id="token" name="token" type="password" required autofocus
+           autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button type="submit">들어가기</button>
+  </form>
+  <p class="hint">토큰은 브릿지가 도는 맥의 <code>~/.frogterminal/token</code> 에 있습니다.</p>
+</main>
+</body>
+</html>
