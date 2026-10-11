@@ -232,7 +232,11 @@ def test_한글_로케일_클로드에서도_주인_시각이_브릿지와_맞�
     card = card_of(tmp_path, "s9")
     if "pid" not in card:
         pytest.skip("클로드 세션 밖에서 돌고 있다 — 적을 주인 프로세스가 없다")
-    assert card["pidStart"][:3] in {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}   # C 형식
+    if sys.platform == "win32":      # 윈도우는 ps 가 없다 — 로케일과 무관한 ISO 로컬 시각(hooks/frog_hook.py · winmux.process_starts)
+        import re
+        assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d", card["pidStart"])
+    else:
+        assert card["pidStart"][:3] in {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}   # C 형식
     from bridge import sessions
     monkeypatch.setenv("LC_ALL", "ko_KR.UTF-8")     # 브릿지 쪽도 한글 환경에서 돌려 본다
     monkeypatch.setenv("LC_TIME", "ko_KR.UTF-8")

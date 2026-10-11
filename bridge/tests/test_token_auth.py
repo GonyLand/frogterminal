@@ -212,3 +212,16 @@ async def test_CSP_관찰_헤더가_403_에도_붙는다(aiohttp_client):
     csp = res.headers["Content-Security-Policy-Report-Only"]
     assert "script-src 'self' https://cdn.jsdelivr.net 'sha256-" in csp and "'unsafe-inline'" not in csp.split("style-src")[0]
     assert res.headers["Referrer-Policy"] == "same-origin"   # no-referrer 면 크롬이 같은 출처 폼 POST 에 Origin: null → /login 403
+
+
+# ── 로그에 토큰이 남지 않게 ────────────────────────────────────────────────────
+
+def test_접근_로그의_token_쿼리는_가려진다():
+    import logging
+    rec = logging.LogRecord("aiohttp.access", logging.INFO, "", 0,
+                            '127.0.0.1 "GET /?token=abc-DEF_123&x=1 HTTP/1.1" 303 0 "-" "UA"', None, None)
+    assert security.TokenMaskFilter().filter(rec) is True
+    assert "abc-DEF_123" not in rec.msg and "/?token=***&x=1 HTTP/1.1" in rec.msg
+    plain = logging.LogRecord("aiohttp.access", logging.INFO, "", 0, '"GET /api/sessions HTTP/1.1" 200', None, None)
+    security.TokenMaskFilter().filter(plain)
+    assert plain.msg == '"GET /api/sessions HTTP/1.1" 200'

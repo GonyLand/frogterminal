@@ -6,7 +6,9 @@
 """
 import hmac
 import json
+import logging
 import os
+import re
 import secrets
 import subprocess
 import sys
@@ -19,6 +21,15 @@ from bridge import config
 from bridge.config import PORT
 
 # config 는 호출 시점에 읽는다(import 때 굳히지 않는다) — 테스트가 허용 계정을 갈아끼울 수 있게.
+
+
+class TokenMaskFilter(logging.Filter):
+    """접근 로그의 `?token=…` 을 가린다 — 로그인 QR(GET /?token=…)을 쓸 때마다 토큰이 로그 파일에 평문으로 남는다."""
+    _RE = re.compile(r"([?&]token=)[^\s&\"]+")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = self._RE.sub(r"\1***", str(record.msg))
+        return True
 
 
 def tailscale_required() -> bool:

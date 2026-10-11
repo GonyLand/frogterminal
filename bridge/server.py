@@ -973,7 +973,8 @@ def main() -> None:
         # 윈도우 기본 인코딩(cp949)이면 감사로그·설정 JSON 의 한글/이모지가 깨지거나 쓰기에 실패한다 — UTF-8 모드로 다시 띄운다.
         sys.exit(subprocess.call([sys.executable, "-X", "utf8", "-m", "bridge.server"]))
     logging.basicConfig(level=logging.INFO)
-    security.assert_safe_to_start()                   # Funnel 게이트 — 확인 안 되면 안 뜬다
+    logging.getLogger("aiohttp.access").addFilter(security.TokenMaskFilter())   # 로그인 QR 의 토큰이 접근 로그에 안 남게
+    security.assert_safe_to_start()                  # Funnel 게이트 — 확인 안 되면 안 뜬다
     sessions.clear_compact_all()                  # 지난 실행의 '여러 칸' 표시 — 보던 칸들이 다시 붙으며 새로 단다
     web.run_app(create_app(), host=config.BIND_HOST, port=config.PORT)
 
