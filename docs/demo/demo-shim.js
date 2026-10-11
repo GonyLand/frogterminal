@@ -138,6 +138,17 @@
     ],
   };
 
+  // 꺼져 있던 프로젝트를 "클로드로 켜기"로 켰을 때 — Claude Code 첫 화면
+  SCREENS["landing"] = [
+    ...claudeHead("landing"),
+    `${C.d}Tips for getting started${C.r}`,
+    `${C.d} Run /init to create a CLAUDE.md file with instructions for Claude${C.r}`,
+    `${C.d} Use Claude to help with file analysis, editing, bash commands and git${C.r}`,
+    "",
+    `${C.d}>${C.r} ${C.d}Try "랜딩 페이지 히어로 문구 3개 뽑아줘"${C.r}`,
+    ...claudeFoot("landing", 0),
+  ];
+
   // htop 화면 — 실제 htop 의 배치를 따라 그린다(숫자는 샘플).
   function bar(pct, width, color) {
     const n = Math.round(pct / 100 * width);
@@ -242,7 +253,8 @@
           const { lines, footer } = htopScreen(cols, rows);
           this.emit(ESC + "2J" + ESC + "H" + lines.join(NL) + NL + NL + footer);
         } else {
-          this.emit((SCREENS[name.replace(/@\d+$/, "")] ?? [`$ `]).join(NL));
+          // 화면을 지우고 쓴다 — 칸이 크기를 잡으며 소켓을 다시 붙이면 같은 화면이 두 번 찍히기 때문
+          this.emit(ESC + "2J" + ESC + "H" + (SCREENS[name.replace(/@\d+$/, "")] ?? [`$ `]).join(NL));
         }
       }, 60);
     }
@@ -255,7 +267,9 @@
 
   // ---------- 장면 ----------
   // 첫 목록이 오면 app.js 가 gridBoot() 로 기억한 칸 수를 연다 — 기억값을 미리 심어 4칸이 뜨게 한다.
-  try { localStorage.setItem("frog.grid", JSON.stringify({ n: 4, names: ["my-app", "blog", "docs-site", "api-server"] })); }
+  const startOne = location.hash === "#one";     // 녹화용 — 1칸에서 시작해 [4] 를 누르는 장면
+  try { localStorage.setItem("frog.grid", JSON.stringify(startOne ? { n: 1, names: ["my-app"] }
+                                                                 : { n: 4, names: ["my-app", "blog", "docs-site", "api-server"] })); }
   catch { /* 저장소가 막혀 있으면 아래에서 직접 연다 */ }
   localStorage.removeItem?.("frog.theme");
 
@@ -263,7 +277,8 @@
   window.addEventListener("load", () => {
     setTimeout(() => {
       if (typeof panes !== "undefined" && !panes.some(p => p.session) && typeof setGrid === "function" && innerWidth >= 900)
-        setGrid(4, ["my-app", "blog", "docs-site", "api-server"], false);
+        setGrid(startOne ? 1 : 4, startOne ? ["my-app"] : ["my-app", "blog", "docs-site", "api-server"], false);
+      if (startOne && typeof openTerminal === "function" && !panes.some(p => p.session)) openTerminal(SESSIONS[0]);
       setTimeout(() => {
         if (scene === "cpu" && typeof openCpu === "function") openCpu();
         if (scene === "inbox" && typeof openInbox === "function") openInbox();
