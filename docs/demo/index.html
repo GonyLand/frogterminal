@@ -1,0 +1,234 @@
+<!doctype html>
+<!-- 생성 파일 — docs/demo/build_demo.py 가 web/index.html 에서 만든다. 직접 고치지 말 것. -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>[demo] frogterminal</title>
+<!-- PWA — 크롬 주소창의 설치 버튼으로 독(Dock) 앱처럼 등록해 쓴다. 서비스워커는 일부러 없다:
+     터미널은 오프라인이 무의미하고, 낡은 JS 를 캐시가 붙드는 사고만 만든다. -->
+<link rel="manifest" href="../../web/manifest.json">
+<link rel="apple-touch-icon" href="../../web/icon-192.png">
+<meta name="theme-color" content="#0B0D0C">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/css/xterm.min.css"
+      integrity="sha384-eDYu/eBZQNhtqTaA7Wl3XighXKxm/9VYF+Chh3hQS+UUlKQIJ14hK2imKu4n99aR"
+      crossorigin="anonymous">
+<!-- UI 본문 폰트(디자인시스템 지정). min 이 아닌 원본 파일 — jsdelivr 가 min 은 재생성할 수 있어
+     SRI 를 걸 수 없다(경고 명시). 버전 고정 원본은 불변이라 무결성 해시가 안전하다. -->
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
+      integrity="sha384-uR1wgObmx89ZQ4VVXHdzjbDJZ1PvBK01K+E3GebmaBKdZ87qRJvBWPoPbzWeEd5T"
+      crossorigin="anonymous">
+<link rel="stylesheet" href="../../web/style.css">
+<script>/* 테마는 CSS 보다 먼저 — 화이트·One Dark 설정 기기가 다크로 번쩍였다 바뀌지 않게 */
+try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
+      if (frogUi === "light" || frogUi === "onedark")
+        document.documentElement.classList.add(frogUi); } catch (e) {}</script>
+</head>
+<body>
+<header id="topbar">
+  <b>🐸<span class="hlabel">&nbsp;frogterminal</span></b>
+  <button id="btn-cpu" title="CPU 모니터 (htop) 켜기/끄기">CPU</button>
+  <button id="btn-killall" title="열려 있는 터미널을 전부 끕니다 — 되살릴 명단을 남깁니다">
+    <span aria-hidden="true">⏻</span><span class="hlabel">전체끄기</span></button>
+  <button id="btn-restore" disabled
+          title="복원할 명단이 없습니다 — [전체끄기] 를 눌러야 생깁니다">
+    <span aria-hidden="true">↻</span><span class="hlabel">복원</span></button>
+  <span id="grid-bar" title="터미널 화면 나누기 — 이 기기에만 기억">
+    <button data-n="1" title="1칸">1</button><button data-n="4" title="4칸 (2×2)">4</button><button
+      data-n="6" title="6칸 (3×2)">6</button><button data-n="8" title="8칸 (4×2)">8</button></span>
+  <span id="sum-alive">세션 –</span>
+  <button id="sum-pending">결재 –</button>
+  <button id="btn-settings" title="설정">⚙️</button>
+</header>
+
+<!-- 전체 끄기 되묻기 — 되돌릴 수 없는 조작이라 헤더 바로 아래에서 한 번 더 묻는다.
+     모달(confirm)을 쓰지 않는 것은 이 앱의 관례다: 포커스와 자동화를 망가뜨린다. -->
+<div id="bulk-confirm" hidden>
+  <span id="bulk-ask"></span>
+  <button id="bulk-yes" class="danger">모두 끄기</button>
+  <button id="bulk-no">취소</button>
+</div>
+
+<!-- 결재 대시보드 — 지금 답을 기다리는 것을 상단에서 바로 고른다(인박스까지 안 들어가도 되게).
+     0건이면 통째로 접힌다. 안내(dash-note)는 카드 바깥이라 7초 폴링의 다시 그리기에 안 지워진다. -->
+<section id="dash" hidden>
+  <div id="dash-head"><button id="dash-toggle" aria-expanded="true">결재 대기 –</button></div>
+  <p id="dash-note" class="dash-note" hidden></p>
+  <div id="dash-cards"></div>
+</section>
+
+<div id="main" class="idle">
+<aside id="list-view">
+  <p class="side-label">프로젝트<button id="proj-new" title="새 프로젝트 만들기">＋ 새 프로젝트</button></p>
+  <div id="proj-new-box" hidden>
+    <input id="proj-new-name" type="text" placeholder="새 프로젝트 이름 — Enter 는 클로드로"
+         autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="proj-new-acts">
+      <button id="proj-new-claude" title="claude 로 시작">클로드로 시작</button>
+      <button id="proj-new-codex" title="codex --yolo 로 시작">코덱스로 시작</button>
+    </div>
+  </div>
+  <input id="proj-filter" type="search" placeholder="프로젝트 검색" autocomplete="off" spellcheck="false">
+  <p id="conn-hint" hidden></p>               <!-- 연결 안내·끄기/숨김 실패 한 줄 — alert() 대신 -->
+  <p id="proj-empty" hidden>일치하는 프로젝트 없음</p>
+  <ul id="sessions"></ul>
+  <div id="hidden-bar" hidden>                <!-- 숨긴 항목 — 0개면 바 자체가 사라진다 -->
+    <button id="hidden-toggle">숨긴 항목</button>
+    <ul id="hidden-list" hidden></ul>
+  </div>
+</aside>
+<div class="splitter" data-pane="list" title="끌어서 폭 조절"></div>
+
+<section id="term-view" hidden>
+  <header id="term-header">
+    <!-- 사이드바 접기 — 데스크톱 전용(폰은 한 화면씩 갈아끼우므로 CSS 가 숨긴다). 글자는 split.js 가 «/» 로 바꾼다 -->
+    <button id="side-toggle" title="사이드바 접기" aria-expanded="true">«</button>
+    <button id="back">← 목록</button>
+    <div><b id="hdr-name"></b><small id="hdr-path"></small></div>
+    <nav id="term-tabs"></nav>   <!-- 같은 프로젝트의 병렬 터미널 탭 — [1][2]…[＋] -->
+    <button id="browser-toggle" title="브라우저 미리보기 — 이 프로젝트의 개발 서버">🌐</button>
+    <button id="files-toggle" title="프로젝트 파일">📁</button>
+  </header>
+  <!-- 터미널 칸들 — 1·4·6·8칸 격자(grid.js). 첫 칸은 늘 여기 있고 나머지는 grid.js 가 만든다.
+       칸 머리줄(프로젝트 고르기)은 여러 칸일 때만 보인다 — 1칸은 지금까지와 똑같은 화면. -->
+  <div id="panes" data-n="1">
+    <div class="pane"><div id="terminal" class="pane-term"></div></div>
+  </div>
+  <!-- 공통 HUD — 여러 칸일 때 칸마다 반복되던 계정 사용량 줄을 한 세트만(grid.js). 1칸이면 접힌다.
+       터미널 영역 안에 둔다 — 사이드바 밑까지 퍼지지 않고 칸들의 왼쪽 선에서 시작한다. -->
+  <div id="hud" hidden></div>
+  <nav id="keybar">
+    <button data-seq="\u001b">Esc</button>
+    <button data-seq="\t">Tab</button>
+    <button data-seq="\u001b[A">↑</button>
+    <button data-seq="\u001b[B">↓</button>
+    <button id="ctrl-key">Ctrl</button>
+    <!-- 폰에는 드래그&드롭이 없고 클립보드 이미지도 브라우저가 잘 안 넘겨준다 — 사진을 넣을
+         길이 아예 없었다. accept 를 비워 두면 폰이 '사진 보관함·사진 찍기·파일'을
+         모두 띄운다. 종류를 좁히면 영상·pdf 를 못 고른다. -->
+    <button id="pick-file" title="사진·파일 넣기">📎</button>
+    <button data-seq="\r">⏎</button>
+  </nav>
+  <input id="file-pick" type="file" multiple hidden>
+</section>
+
+<!-- 결재 인박스 — 설정과 같은 오른쪽 팝업 패널(터미널 전체를 가리지 않는다).
+     닫기 = ✕ · 결재 버튼 다시 누르기 · Esc. 폰에서는 전면으로 편다. -->
+<aside id="inbox-view" hidden>
+  <header class="pane-head"><h2>결재 인박스</h2><span class="head-spacer"></span><button id="inbox-back" title="닫기">✕</button></header>
+  <p id="inbox-note" hidden></p>              <!-- 전송 실패 안내 — alert() 대신 화면 안에 한 줄 -->
+  <div id="inbox-cards"></div>
+</aside>
+
+<!-- 설정은 화면 교대가 아니라 오른쪽 팝업 패널 — 뒤의 터미널이 보여야 테마·글자 변경이
+     누르는 즉시 눈으로 확인된다. 닫기 = ✕ · ⚙ 다시 누르기 · Esc. -->
+<aside id="settings-view" hidden>
+  <header class="pane-head"><h2>설정</h2><span class="head-spacer"></span><button id="settings-back" title="닫기">✕</button></header>
+  <p id="set-note" hidden></p>                <!-- 저장 성공·실패 안내 — alert() 대신 화면 안에 한 줄 -->
+  <div id="settings-body"><div class="set-wrap">
+    <h3>작업공간</h3>
+    <div id="set-root"></div>
+    <p class="set-hint">프로젝트 폴더 바로 아래에서 CLAUDE.md 또는 AGENTS.md가 있는 폴더를
+      프로젝트로 표시합니다. 루트를 바꿔도 지금 살아 있는 tmux 세션은 종료되지 않습니다.</p>
+    <h3>새 세션을 열면 시작할 것</h3>
+    <div class="set-line"><span>에이전트</span><div id="set-agent" class="set-group"></div></div>
+    <div class="set-line"><span>실행 옵션</span><div id="set-flags" class="set-group"></div></div>
+    <div id="set-cmds"></div>
+    <p class="set-hint">프로젝트를 누르면 켜져 있는 세션엔 그대로 붙고, 꺼져 있으면 여기서 고른
+      에이전트를 바로 시작합니다. 에이전트를 끝내면 세션도 함께 닫힙니다.
+      실행 명령에는 별칭 이름만 넣습니다. 저장하면 frogterminal이 zsh 설정을 관리하며,
+      새로 여는 터미널부터 적용됩니다.</p>
+    <h3>화면 — 이 기기에만 적용</h3>
+    <div class="set-line"><span>테마</span><div id="set-ui" class="set-group"></div></div>
+    <div class="set-line"><span>터미널 색</span><div id="set-term-theme" class="set-group"></div></div>
+    <div class="set-line"><span>터미널 글자</span><div id="set-font" class="set-group"></div></div>
+    <div class="set-line"><span>글자 크기</span><div id="set-font-size" class="set-group"></div></div>
+    <div class="set-line"><span>파일 편집</span><div id="set-fp-theme" class="set-group"></div></div>
+    <h3>붙여넣기 캐시</h3>
+    <div class="set-line"><span id="set-cache-size">확인 중…</span>
+      <div class="set-group"><button id="set-cache-clear">비우기</button></div></div>
+    <p class="set-hint">폰에서 올린 사진처럼 <b>맥에 원본이 없는 것만</b> 여기에 사본으로 남습니다.
+      비워도 프로젝트 파일과 감사로그는 그대로입니다.</p>
+    <h3>에이전트 연결</h3>
+    <div id="set-status"></div>
+    <p class="set-hint">로그인이 풀렸으면 그 프로젝트 터미널에서 claude 또는 codex login을
+      한 번 실행하면 됩니다 — 이 화면에는 비밀번호·키를 넣지 않습니다.</p>
+  </div></div>
+</aside>
+
+<!-- 브라우저 패널(4번째 칸) — 이 프로젝트의 개발 서버를 iframe 으로. 열고 닫기는 browser.js -->
+<div class="splitter" data-pane="browser" hidden title="끌어서 폭 조절"></div>
+<aside id="browser-panel" hidden data-mode="preview">
+  <header class="pane-head"><button id="bp-close" title="닫기">✕</button>
+    <span id="bp-modes"><button id="bp-mode-preview" class="on" title="미리보기 — 개발 서버를 iframe 으로(지연 없음)">미리보기</button><button
+      id="bp-mode-browser" title="브라우저 — 맥의 크롬을 그대로(어떤 사이트든·클로드도 같은 화면)">브라우저</button></span>
+    <button id="bp-back" title="뒤로 (⌘←)">◀</button><button id="bp-forward" title="앞으로 (⌘→)">▶</button>
+    <input id="bp-url" type="text" placeholder="포트(3000) 또는 주소 — Enter" autocomplete="off"
+           autocapitalize="off" spellcheck="false">
+    <select id="bp-services" title="지금 맥에서 듣는 개발 서버"></select>
+    <button id="bp-reload" title="다시 열기 (⌘R)">↻</button><button id="bp-newtab" title="이 기기 브라우저로 열기">↗</button><button
+      id="bp-power" title="이 프로젝트 브라우저 끄기 — 메모리 반납 (안 보면 10분 뒤 저절로 꺼집니다)">⏻</button>
+  </header>
+  <nav id="bp-tabs"></nav>                    <!-- 브라우저 모드 — 원격 크롬의 탭 -->
+  <p id="bp-note" hidden></p>
+  <iframe id="bp-frame" title="미리보기" referrerpolicy="no-referrer"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+  <div id="rb-wrap"><canvas id="rb-canvas" width="1024" height="700"></canvas>
+    <textarea id="rb-input" aria-label="브라우저 입력" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></div>
+</aside>
+<div class="splitter" data-pane="file" hidden title="끌어서 폭 조절"></div>
+<aside id="file-panel" hidden>
+  <header class="pane-head"><button id="fp-close">✕</button><nav id="fp-crumb"></nav>
+    <div id="fp-tools"><button id="fp-fs-minus" title="글자 작게">−</button><b
+      id="fp-fs-val"></b><button id="fp-fs-plus" title="글자 크게">+</button><button
+      id="fp-newdir">새 폴더</button></div></header>
+  <p id="fp-note" hidden></p>                 <!-- 안내·경고 한 줄 — alert() 대신, 본문을 다시 그려도 남는다 -->
+  <div id="fp-body"></div>
+</aside>
+</div>
+
+<!-- 하단 상태바(데스크톱) — Orca 차용: 연결·세션·결재 요약 + 클로드 계정·사용량(레이트리밋) -->
+<!-- 새 프론트 배포 감지 배너 — 앱을 껐다 켜지 않아도 새 코드가 나온 걸 알 수 있게 -->
+<div id="copy-toast" hidden></div>   <!-- 복사됨 알림 — 잠깐 떴다 사라진다 -->
+
+<div id="update-bar" hidden>새 버전이 배포되었습니다 — 새로고침하면 적용됩니다
+  <button id="update-reload">새로고침</button></div>
+
+<!-- CPU 팝업 — 전용 tmux 세션(_frogtop)의 htop 을 떠 있는 창으로. [CPU] 버튼이 켜고 끈다 -->
+<div id="cpu-pop" hidden>
+  <header><b>CPU — htop</b><button id="cpu-close">✕</button></header>
+  <div id="cpu-term"></div>
+</div>
+
+<footer id="statusbar">
+  <span id="sb-conn">○ 연결 확인 중…</span>
+  <span id="sb-counts"></span>
+  <span class="sb-spacer"></span>
+  <span id="sb-usage" title="클로드 사용량 — 5분마다 갱신"></span>
+  <span id="sb-account"></span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.min.js"
+        integrity="sha384-pELe6ZHtFxFcuYBq3gMkqvmnNIqUWnAYjBG5gThqQQCjWp8PJ/65MLK4lMIfEK1e"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.12.0/lib/addon-web-links.min.js"
+        integrity="sha384-qRCjDpXBNYif7WxgGNS9nK3b8jeByXxOaG33yBbmRm6mBaYUEJNSEiWpyoEstjEp"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.11.0/lib/addon-fit.min.js"
+        integrity="sha384-UwMkGaBqfOcrTjPjXdAPWrGQkhpxTJ21vKtTwLb6wBpBM8HQXKAiUuwVJfgY0Yw6"
+        crossorigin="anonymous"></script>
+<script src="../../web/config.js"></script>
+<script src="demo-shim.js"></script>
+<script src="../../web/app.js"></script>
+<script src="../../web/pane.js"></script>     <!-- app.js 다음 — panes·activePane 선언과 입력 헬퍼를 쓴다 -->
+<script src="../../web/inbox.js"></script>
+<script src="../../web/dash.js"></script>     <!-- inbox.js 다음 — 카드 잠금·오류 문구를 그대로 쓴다 -->
+<script src="../../web/settings.js"></script>
+<script src="../../web/split.js"></script>
+<script src="../../web/files.js"></script>
+<script src="../../web/browser.js"></script>  <!-- split.js·files.js 다음 — 분할 상수·fpGo·fpClose 를 쓴다 -->
+<script src="../../web/remote.js"></script>   <!-- browser.js 다음 — 브라우저 모드(원격 크롬 뷰어) -->
+<script src="../../web/grid.js"></script>     <!-- 맨 끝 — 파일·브라우저 패널 함수(fpClose·bpClose)를 쓴다 -->
+</body>
+</html>

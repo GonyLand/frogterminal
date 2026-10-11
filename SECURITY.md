@@ -2,9 +2,9 @@
 
 ## 신고 (Reporting)
 
-취약점을 찾으면 공개 이슈 대신 GitHub 의 **Private vulnerability reporting**(Security 탭 → Report a vulnerability) 으로 보내 주세요. 재현 절차와 영향을 적어 주시면 7일 안에 답합니다.
+취약점을 찾으면 공개 이슈 대신 GitHub 의 **Private vulnerability reporting**(Security 탭 → Report a vulnerability) 으로 보내 주세요. 재현 절차와 영향을 적어 주세요. 개인 시간에 유지하는 프로젝트라 응답 시한은 약속하지 않습니다.
 
-Please report vulnerabilities privately via GitHub's "Report a vulnerability" (Security tab) rather than a public issue. Include reproduction steps; we aim to respond within 7 days.
+Please report vulnerabilities privately via GitHub's "Report a vulnerability" (Security tab) rather than a public issue. Include reproduction steps. This project is maintained in spare time, so no response time is guaranteed.
 
 ## 위협 모델 (Threat model)
 
