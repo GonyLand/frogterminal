@@ -38,7 +38,7 @@ There are several tools in this category in 2026. This is the spot frogterminal 
 | | frogterminal |
 |---|---|
 | **Sessions survive** | Terminals live inside tmux. Your phone sleeps, Wi-Fi changes, the agent keeps working, and you reopen exactly where you were. |
-| **Light** | The bridge is a single Python process. With 15 sessions attached it used about 40 MB of resident memory (Mac Studio, measured Oct 2026). The UI is one browser tab. |
+| **Light** | The bridge is a single Python process. With 15 sessions attached, the bridge process itself used about 40 MB of resident memory (Mac Studio, measured Oct 2026). Memory used by Claude Code and Codex themselves is separate; the UI is one browser tab. |
 | **Many projects, one screen** | 1 / 4 / 6 / 8 pane grid. Double-click a pane to enlarge it, double-click again to go back. |
 | **Shared HUD at the bottom** | With four panes open, the account-usage line appears once at the bottom instead of once per pane, so the terminals get the space. |
 | **Stop all · Restore** | One button stops every running session; Restore brings back exactly that list. For reboots and end of day. |
