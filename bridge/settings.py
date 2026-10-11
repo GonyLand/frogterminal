@@ -31,7 +31,7 @@ from bridge import config, sessions
 AGENTS = {"claude": "claude", "codex": "codex", "shell": None}
 DEFAULTS = {"agent": "claude",               # 이 앱의 세션 = 클로드 세션이 기본 그림
             # bypass 기본 켬 — Orca 도 전 에이전트에 전권한 플래그를 기본 적용한다("세션이 곧
-            # 작업 격리"라는 판단). 대표 실사용도 늘 bypass 다. 설정에서 끌 수 있다.
+            # 작업 격리"라는 판단). 실사용도 늘 bypass 다. 설정에서 끌 수 있다.
             "bypass": True,                  # 클로드 --dangerously-skip-permissions · 코덱스 --yolo 로 시작
             "rc": False,                     # 클로드 Remote Control(claude.ai·폰 앱) 켜서 시작
             "cont": True,                    # 프로젝트의 직전 대화를 이어서 시작 — 아래 launch_command(--continue)
@@ -131,7 +131,7 @@ def _stored_alias(value) -> str:
 def _read_settings_data() -> dict:
     """고정 설정을 읽되, 첫 전환 전에는 예전 <프로젝트 루트>/_frogterminal 설정을 읽어 별칭 등을 보존한다."""
     paths = [config.SETTINGS_FILE]
-    # 테스트가 SETTINGS_FILE을 임시 경로로 바꿨을 때 대표의 실제 legacy 설정을 읽으면 안 된다.
+    # 테스트가 SETTINGS_FILE을 임시 경로로 바꿨을 때 사용자의 실제 legacy 설정을 읽으면 안 된다.
     if config.SETTINGS_FILE == config.DEFAULT_SETTINGS_FILE and not config.SETTINGS_FILE.exists():
         paths.append(config.LEGACY_SETTINGS_FILE)
     for path in paths:
@@ -319,18 +319,18 @@ def _restore_zshrc(path: Path, existed: bool, original: bytes, mode: int) -> Non
 
 
 # ── 프로젝트마다 '하나의 대화' — 이어서 시작(cont) ──────────────────────────
-# 대표 지시(2026-08-16): exit 로 나갔다 다시 떠도 하던 대화를 잇는다.
+# exit 로 나갔다 다시 떠도 하던 대화를 잇는다.
 #
 # 처음에는 세션 이름 → uuid5 로 ID 를 고정해 --session-id/--resume 로 이었다. 그런데
-# **--remote-control 과 함께 쓰면 --session-id 가 무시된다**(2026-08-24 실측: DGagent 가
+# **--remote-control 과 함께 쓰면 --session-id 가 무시된다**(2026-08-24 실측: 다른 프로젝트가
 # `--session-id fe1b66f3` 로 떴는데 훅이 기록한 실제 대화는 ee70c8e8). 지정한 ID 에는 아무것도
-# 안 쌓이니, 다음 실행의 --resume 은 그 빈·낡은 대화를 열었다 — 대표가 겪은 "한참 전 껄로
-# 계속 resume 된다"의 정체다(다른 프로젝트의 며칠 전 대화가 열리고 있었다).
+# 안 쌓이니, 다음 실행의 --resume 은 그 빈·낡은 대화를 열었다 — "한참 전 대화로
+# 계속 resume 된다"는 증상의 정체다(다른 프로젝트의 며칠 전 대화가 열리고 있었다).
 #
 # 그래서 클로드가 스스로 관리하는 --continue(그 폴더의 가장 최근 대화)로 간다. 우리가 ID 를
 # 붙들지 않으므로 어긋날 것이 없다. 대신 같은 폴더를 두 창이 함께 이으면 서로 가로채므로,
 # 이어가기는 **기본 세션에만** 건다 — 탭(base@N)은 '옆에서 따로 돌리는 자리'라 새 대화로 둔다
-# (대표 확인: 프로젝트당 하나의 대화).
+# (프로젝트당 하나의 대화).
 
 
 def launch_command(agent: str, session: str = "", cfg: dict | None = None,
@@ -480,7 +480,7 @@ def invalidate_status() -> None:
 
 # ── 클로드 사용량(레이트리밋) — Orca 의 상태바 차용 ─────────────────────────
 # cswap(claude-swap, 이 맥의 계정 전환기)이 이미 창구별 사용량을 집계한다. 실측 출력:
-#   Status: Account-2 (ceo@d-onworks.com [ceo@d-onworks.com's Organization])
+#   Status: Account-2 (me@example.com [me@example.com's Organization])
 #     ├ 5h:     38%   resets 04:19         in 3h 34m
 #     └ Fable:  17%   resets Aug 20 22:59  in 5d 22h
 # 이 출력만 읽는다(쓰기·전환 없음). cswap 이 없거나 형식이 바뀌면 조용히 빈 값 — 상태바가 그 칸을 접는다.

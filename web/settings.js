@@ -34,7 +34,7 @@ const TERM_FONTS = {
 };
 
 // 터미널 색 — 기본은 One Dark Pro(VS Code 최다 설치 테마). "글자가 온통 흰색이라 눈이 아프다"
-// (대표 지적)의 답: 본문 #ABB2BF 로 낮추고 ANSI 16색을 제대로 채워 클로드 출력이 구별되게 한다.
+//의 답: 본문 #ABB2BF 로 낮추고 ANSI 16색을 제대로 채워 클로드 출력이 구별되게 한다.
 const TERM_THEMES = {
   onedark: {
     background: "#23272E", foreground: "#ABB2BF", cursor: "#528BFF", cursorAccent: "#23272E",
@@ -87,7 +87,7 @@ function applyPrefs() {
   const fpFs = Math.max(10, Math.min(22, p.fpFontSize | 0 || 13));
   document.documentElement.style.setProperty("--fp-fs", `${fpFs}px`);
   document.getElementById("fp-fs-val").textContent = fpFs;
-  // 파일 편집 색 — 파일 패널 subtree 에만 팔레트를 덮는다(대표 지시 2026-08-16).
+  // 파일 편집 색 — 파일 패널 subtree 에만 팔레트를 덮는다.
   // 터미널 색을 따로 고르는 것과 같은 결: 코드를 읽는 창과 앱 껍데기의 밝기를 따로 잡고 싶을 때 쓴다.
   const panel = document.getElementById("file-panel");
   panel.classList.remove("pal-frog", "pal-onedark", "pal-light");
@@ -167,7 +167,7 @@ function renderFlags(settings) {
   bypass.classList.add("risk");   // 위험 옵션이 켜졌을 때 '권장'의 그린이 아니라 주의의 amber 로
   document.getElementById("set-flags").replaceChildren(
     bypass,
-    // 이어서 시작 — exit 로 나갔다 다시 떠도 그 세션이 하던 대화를 그대로 잇는다(대표 지시).
+    // 이어서 시작 — exit 로 나갔다 다시 떠도 그 세션이 하던 대화를 그대로 잇는다.
     // 세션마다 고정 ID 라 같은 폴더의 다른 탭·Zed 대화를 가로채지 않는다(bridge/settings.py).
     choiceBtn("이어서 시작", "나갔다 다시 떠도 하던 대화 그대로", settings.cont,
               () => saveSettings({ cont: !settings.cont })),
@@ -177,7 +177,7 @@ function renderFlags(settings) {
 }
 
 // 실행 별칭 — 이름만 받고 대상(claude·codex)은 서버가 고정한다. 저장 버튼은 두 칸을 함께 보내
-// 기존 frogterminal 블록을 한 번에 갈아끼운다. Enter도 같은 저장 동작(대표의 기존 습관)을 유지한다.
+// 기존 frogterminal 블록을 한 번에 갈아끼운다. Enter도 같은 저장 동작(사용자의 기존 습관)을 유지한다.
 function renderCmds(settings) {
   const inputs = {};
   const row = (agent, label) => {
@@ -245,7 +245,7 @@ async function saveSettings(patch) {
 }
 
 // ---------- 화면 설정 (이 기기) ----------
-// 테마는 3세트 — 패널과 터미널이 같은 이름·같은 계열로 묶인다(대표 지시 2026-08-15).
+// 테마는 3세트 — 패널과 터미널이 같은 이름·같은 계열로 묶인다.
 // 테마를 고르면 짝이 되는 터미널 색까지 같이 바뀌고, 아래 '터미널 색' 줄에서 따로 바꿀 수도 있다.
 const UI_LABEL = { dark: "개구리 다크", onedark: "One Dark", light: "라이트" };
 const UI_TERM_PAIR = { dark: "frog", onedark: "onedark", light: "light" };
@@ -439,7 +439,7 @@ document.addEventListener("keydown", e => {
 applyPrefs();                                  // 페이지 로드 즉시 — 테마·터미널 배경을 맞춘다
 
 
-// ---------- 붙여넣기 캐시 — 얼마나 쌓였나 · 비우기 (대표 지시 2026-08-15) ----------
+// ---------- 붙여넣기 캐시 — 얼마나 쌓였나 · 비우기 ----------
 // 원본을 찾으면 사본을 안 만드는 쪽으로 고쳤지만(app.js), 폰에서 올린 사진처럼 맥에 원본이
 // 없는 것은 여전히 사본으로 남는다. 그 자리를 사람이 직접 비울 수 있게 한다.
 const cacheSizeText = b =>

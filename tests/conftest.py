@@ -52,12 +52,12 @@ SESSIONS = [
 DECISION_KINDS = {"permission", "picker"}
 # live=False = 그 프로젝트의 tmux 세션이 죽었다(답을 보내면 404). 헤드라인 결재 수에서 빠진다.
 # kind="done" = 훅의 Stop 이벤트가 쓴 '한 턴을 끝내고 다음 지시를 기다리는' 카드. 묻는 말이 없어
-# message 가 항상 빈 문자열이다(hooks/frog_hook.py) — 대표가 다음 지시를 넣는 자리라 가장 자주 쓴다.
+# message 가 항상 빈 문자열이다(hooks/frog_hook.py) — 사용자가 다음 지시를 넣는 자리라 가장 자주 쓴다.
 # wiki 는 피커 카드와 완료 카드를 함께 갖는다(한 프로젝트에 클로드 세션이 둘이거나, 훅 카드 옆에
 # 화면스캔 피커가 따로 붙는 실제 상황) — 둘이 서로의 잠금을 옮겨 받지 않는지 여기서 본다.
 #
 # ★ asked/said = 브릿지가 대화 기록에서 뽑아 주는 맥락(bridge/decisions.py, 각 400자 상한).
-#   훅 원문(message)만 있는 카드로는 대표가 아무 판단도 못 한다("Claude is waiting for your
+#   훅 원문(message)만 있는 카드로는 사용자가 아무 판단도 못 한다("Claude is waiting for your
 #   input"). 그래서 화면은 message 대신 이 둘을 보여줘야 한다 — 아래 픽스처는 그 네 경우를
 #   한 번에 깐다: ①피커(question 과 said 가 같은 말) ②기계 문구뿐인 결재(맥락이 진짜 내용)
 #   ③완료(다음 지시 자리) ④맥락이 통째로 빈 카드(/clear 직후 — 화면이 이상해지면 안 된다).
@@ -241,7 +241,7 @@ class FakeBridge:
     def kill_gone(self):
         """끄기를 404 로 되돌린다 — 폴더 없이 tmux 세션만 있던 항목을 끄고 나면 이름 자체가
         브릿지 관문에서 사라져 두 번째 요청이 404 다. 결과는 어차피 '꺼짐'이라 화면은 이것을
-        에러로 띄우면 안 된다(대표가 아무것도 할 게 없는 경고창이 뜬다)."""
+        에러로 띄우면 안 된다(사용자가 아무것도 할 게 없는 경고창이 뜬다)."""
         self.kill_status = 404
         try:
             yield self
@@ -490,7 +490,7 @@ def bridge(tmp_path_factory):
 
     async def api_decision_answer(request):
         # 진짜 브릿지는 답을 보낸 뒤 카드를 지우지만, 여기선 일부러 남긴다 —
-        # "카드가 아직 남아 있는 동안 대표가 한 번 더 누르는" 상황이 화면에서 막히는지 봐야 한다.
+        # "카드가 아직 남아 있는 동안 사용자가 한 번 더 누르는" 상황이 화면에서 막히는지 봐야 한다.
         body = await request.json()
         bridge = state["bridge"]
         if bridge.answer_status:                        # picker_gone 손잡이 — 답이 나가지 않는다

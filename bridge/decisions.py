@@ -15,7 +15,7 @@ from bridge.config import encode_cwd          # 대화 파일 경로 규칙 — 
 
 # 사람 답이 없으면 클로드가 한 발짝도 못 나가는 상태만 '결재'다.
 # idle("Claude is waiting for your input")은 뺐다 — 그건 할 말을 마치고 빈 프롬프트에서 쉬는
-# 것이라, 결정할 거리가 없는데도 빨간불이 켜져 진짜 결재가 그 안에 묻혔다(대표 지적 2026-08-14).
+# 것이라, 결정할 거리가 없는데도 빨간불이 켜져 진짜 결재가 그 안에 묻혔다.
 # 그런 카드는 '완료 — 다음 지시 대기'로 간다. 화면에 진짜 선택지가 떠 있으면 화면스캔이
 # picker 로 올려주므로, 답해야 할 것을 놓치지는 않는다.
 DECISION_KINDS = {"permission", "picker"}
@@ -126,7 +126,7 @@ def parse_picker(text: str) -> dict | None:
 # 세션마다 남기는 대화 JSONL 을 꼬리만 읽어, 마지막에 시킨 것/마지막에 한 말을 얹는다.
 
 # 슬래시 명령(그 껍데기 <command-name>·<local-command-stdout>·<system-reminder> 포함)과 인터럽트
-# 표식은 대표가 친 말이 아니다 — 이게 asked 로 올라오면 카드가 또 아무 정보도 못 준다.
+# 표식은 사용자가 친 말이 아니다 — 이게 asked 로 올라오면 카드가 또 아무 정보도 못 준다.
 _NOISE_USER_RE = re.compile(r"^(<|\[Request interrupted|/[A-Za-z])")
 _CONTEXT_CACHE: dict[str, tuple[tuple[int, int], dict]] = {}
 
@@ -222,9 +222,9 @@ def _scan(text: str) -> dict:
             entry = json.loads(line)
         except (json.JSONDecodeError, ValueError):
             continue                              # 깨진 줄 하나가 스캔을 끝내지 않게
-        # isSidechain=True 는 서브에이전트 대화다 — 대표가 시킨 것도, 대표에게 한 말도 아니다.
+        # isSidechain=True 는 서브에이전트 대화다 — 사용자가 시킨 것도, 사용자에게 한 말도 아니다.
         # isMeta=True 는 시스템이 user 턴에 끼워 넣은 것(스킬 본문·캐비앳·붙인 이미지 경로).
-        # 실측: 이걸 안 거르면 "Base directory for this skill: …" 이 대표의 지시로 올라온다.
+        # 실측: 이걸 안 거르면 "Base directory for this skill: …" 이 사용자의 지시로 올라온다.
         if not isinstance(entry, dict) or entry.get("isSidechain") or entry.get("isMeta"):
             continue
         kind = entry.get("type")
@@ -287,7 +287,7 @@ def _behind(card: dict) -> bool:
     """훅이 이 카드를 쓴 뒤로 대화가 더 진행됐나 = 카드가 말하는 상태는 이미 지나갔다.
 
     권한 프롬프트를 웹이 아니라 터미널에서 직접 승인하면 훅이 울리지 않는다. 클로드는 하던 일을
-    계속하는데 카드만 '결재 필요'로 영영 남았다 — 대표가 본 그 '이전 것'이 이것이다.
+    계속하는데 카드만 '결재 필요'로 영영 남았다 — 사용자가 본 그 '이전 것'이 이것이다.
     승인 직후 대화에는 tool_result 가 붙으므로, 마지막 대화 시각이 카드보다 뒤면 결재는 끝난 것이다.
     """
     last, wrote = _moment(card.get("lastAt")), _moment(card.get("updatedAt"))
@@ -313,7 +313,7 @@ def _live_check(starts: dict | None, tmux_names: set):
 def overview() -> dict:
     """열린 결재 카드 + 프로젝트별 상태 한 번에. working 카드는 상태 집계에만 쓴다."""
     # 프로그터미널이 연 세션(tmux 안)만 — Zed·iTerm 클로드의 카드가 따라 들어오면, 사이드바가
-    # "완료 대기"라는 프로젝트를 눌렀을 때 정작 새 tmux 클로드가 뜨는 어긋남이 생긴다(대표 실측).
+    # "완료 대기"라는 프로젝트를 눌렀을 때 정작 새 tmux 클로드가 뜨는 어긋남이 생긴다.
     # 표식 없는 옛 카드도 제외한다: 그 세션이 다음에 뭐라도 하면 훅이 표식을 달아 다시 올라온다.
     cards = [c for c in _load_cards() if c.get("inTmux") is True]
     open_cards = [c for c in cards if c.get("kind") != "working"]
@@ -339,7 +339,7 @@ def overview() -> dict:
     # live = 이 카드의 tmux 세션이 지금 실제로 붙어있는가. 훅(SessionEnd)이 정상 경로에서는
     # 카드를 지우지만, 크래시·kill -9 로 죽으면 카드가 TTL(72h) 동안 유령으로 남는다. 그 카드에
     # 답을 보내면 send_answer 가 LookupError → 404 이므로, 헤드라인 결재 수(api_summary)는
-    # 이 필드로 걸러야 한다. 카드 자체는 목록에 남겨 대표가 터미널을 다시 열어 볼 길을 열어둔다.
+    # 이 필드로 걸러야 한다. 카드 자체는 목록에 남겨 사용자가 터미널을 다시 열어 볼 길을 열어둔다.
     # 대화 맥락 — 카드 하나가 터져도 목록 전체를 죽이지 않는다(전역 제약). 세 필드는 항상 있다.
     for c in open_cards:
         try:
@@ -363,7 +363,7 @@ def overview() -> dict:
     # 상태는 '열 수 있는 터미널'이 있을 때만 — tmux 세션(탭 포함)이 없으면 만들지 않는다.
     # 프로세스 생존(live)만으로 상태를 만들면, tmux 세션을 끈 뒤에도 그 안에서 떠난 헤드리스
     # claude -p(자동화)가 살아 있는 동안 사이드바가 '진행중…'을 달고 점은 꺼짐인 채 어긋난다
-    # (대표 실측 2026-08-23: marketing 카드 pid 가 `claude -p --disallowedTools …` 였다).
+    # (실측 2026-08-23: marketing 카드 pid 가 `claude -p --disallowedTools …` 였다).
     live_bases = {sessions.base_of(n) for n in live}
     for c in open_cards + working:
         project = c.get("project")

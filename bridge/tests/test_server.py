@@ -119,7 +119,7 @@ async def test_summary_요약(aiohttp_client, monkeypatch):
 async def test_summary_죽은세션_유령카드는_결재수에_안잡힌다(aiohttp_client, monkeypatch):
     """훅이 SessionEnd를 못 남기고 죽은 세션의 카드는 TTL 동안 남는다(decisions.overview가
     live=False로 표시). 헤드라인 결재 수는 지금 답을 보낼 수 있는 것만 세야 한다 —
-    안 그러면 대표가 그 수를 보고 눌렀을 때 답이 404로 새는 최악의 경험이 된다."""
+    안 그러면 사용자가 그 수를 보고 눌렀을 때 답이 404로 새는 최악의 경험이 된다."""
     from bridge import decisions, sessions
     monkeypatch.setattr(decisions, "overview", lambda: {
         "cards": [{"kind": "permission", "project": "dead", "live": False},
@@ -481,7 +481,7 @@ async def test_결재집계는_이벤트루프_밖에서_한_주기에_한번만
 
 
 async def test_답을_보낸_직후에는_집계를_다시_돈다(aiohttp_client, monkeypatch, tmp_path):
-    """캐시가 그대로면 '보냈는데 카드가 안 사라진다' → 대표가 다시 누르게 된다."""
+    """캐시가 그대로면 '보냈는데 카드가 안 사라진다' → 사용자가 다시 누르게 된다."""
     from bridge import decisions
     횟수 = []
     monkeypatch.setattr(decisions, "overview",
@@ -515,7 +515,7 @@ async def test_decision_감사로그_개행주입_차단(aiohttp_client, monkeyp
     monkeypatch.setattr(server, "audit_path", lambda: audit)
     client = await aiohttp_client(server.create_app())
     res = await client.post("/api/decisions/answer", headers=GOOD, json={
-        "project": "a\n2026-08-05T00:00:00+09:00 decision user=대표 project=위조 type=option",
+        "project": "a\n2026-08-05T00:00:00+09:00 decision user=사용자 project=위조 type=option",
         "sessionId": "s1", "type": "text", "value": "네"})
     assert res.status == 200
     assert len(audit.read_text().splitlines()) == 1, audit.read_text()
@@ -897,7 +897,7 @@ async def test_file_put_감사로그_개행주입_차단(aiohttp_client, monkeyp
     client = await aiohttp_client(server.create_app())
     res = await client.put("/api/file", headers=GOOD, json={
         "project": "a",
-        "path": "x.md\n2026-08-05T00:00:00+09:00 filewrite user=대표 project=a path=위조.md bytes=0",
+        "path": "x.md\n2026-08-05T00:00:00+09:00 filewrite user=사용자 project=a path=위조.md bytes=0",
         "content": "한글", "baseMtimeNs": "1"})
     assert res.status == 200
     written = audit.read_text()
@@ -920,7 +920,7 @@ async def test_uploads_폴더는_파일API로_읽지도_덮어쓰지도_못한�
     from bridge import sessions
     audit = tmp_path / "_uploads" / "frogterminal-audit.log"
     audit.parent.mkdir()
-    audit.write_text("2026-08-05T00:00:00+09:00 attach user=대표\n")
+    audit.write_text("2026-08-05T00:00:00+09:00 attach user=사용자\n")
     monkeypatch.setattr(config, "projects_root", lambda: tmp_path)
     client = await aiohttp_client(server.create_app())
     assert (await client.get("/api/files?project=_uploads", headers=GOOD)).status == 404
@@ -932,7 +932,7 @@ async def test_uploads_폴더는_파일API로_읽지도_덮어쓰지도_못한�
     assert res.status == 404
     assert (await client.post("/api/upload?project=_uploads", headers=GOOD,
                               data={"file": open(__file__, "rb")})).status == 400
-    assert audit.read_text() == "2026-08-05T00:00:00+09:00 attach user=대표\n"   # 원본 그대로
+    assert audit.read_text() == "2026-08-05T00:00:00+09:00 attach user=사용자\n"   # 원본 그대로
 
 
 KILL = "/api/sessions/kill"
@@ -992,7 +992,7 @@ async def test_끄지_않은_세션은_re1_로도_그대로_붙는다(aiohttp_cl
 
 
 async def test_kill_이미_꺼진_프로젝트는_에러창을_안_띄운다(aiohttp_client, tmp_path, monkeypatch):
-    """대표가 두 번 눌러도 200 — 원하던 결과(꺼짐)는 이미 이뤄졌다. killed=false 로만 알린다."""
+    """사용자가 두 번 눌러도 200 — 원하던 결과(꺼짐)는 이미 이뤄졌다. killed=false 로만 알린다."""
     from bridge import sessions
     (tmp_path / "myproj").mkdir()
     monkeypatch.setattr(sessions.config, "projects_root", lambda: tmp_path)
@@ -1093,7 +1093,7 @@ async def test_kill은_이벤트루프_밖에서_돈다(aiohttp_client, tmp_path
 
 
 async def test_kill_직후에는_집계를_다시_돈다(aiohttp_client, tmp_path, monkeypatch):
-    """캐시가 그대로면 사이드바가 계속 '● 켜짐'이라 대표가 '안 꺼졌나?' 하고 또 누른다."""
+    """캐시가 그대로면 사이드바가 계속 '● 켜짐'이라 사용자가 '안 꺼졌나?' 하고 또 누른다."""
     from bridge import decisions, sessions
     횟수 = []
     monkeypatch.setattr(decisions, "overview",
@@ -1120,7 +1120,7 @@ async def test_kill_감사로그_개행주입_차단(aiohttp_client, tmp_path, m
     monkeypatch.setattr(sessions, "kill_session", lambda n: True)
     client = await aiohttp_client(server.create_app())
     res = await client.post(KILL, headers=GOOD, json={
-        "project": "a\n2026-08-05T00:00:00+09:00 kill user=대표 project=위조"})
+        "project": "a\n2026-08-05T00:00:00+09:00 kill user=사용자 project=위조"})
     assert res.status == 200
     line = audit.read_text().splitlines()
     assert len(line) == 1, audit.read_text()

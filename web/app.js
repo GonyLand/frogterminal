@@ -26,8 +26,8 @@ for (const [name, get] of Object.entries({
 
 // ---------- 화면 배치 ----------
 // 데스크톱(≥900px)은 목록을 왼쪽 사이드바로 상시 띄운 3열, 폰은 한 화면씩 갈아끼운다.
-// 가운데를 교대하는 화면은 터미널 하나뿐이고, 인박스·설정은 오른쪽 '팝업 패널'이다(대표 지시 —
-// 터미널을 가리면 안 되고, 테마 변경 같은 것은 뒤에서 즉시 보여야 한다).
+// 가운데를 교대하는 화면은 터미널 하나뿐이고, 인박스·설정은 오른쪽 '팝업 패널'이다
+// (터미널을 가리면 안 되고, 테마 변경 같은 것은 뒤에서 즉시 보여야 한다).
 const isDesktop = () => matchMedia("(min-width: 900px)").matches;
 
 function showView(name) {                     // "term" — 가운데 영역(터미널)을 연다
@@ -115,7 +115,7 @@ let lastSessions = [];                        // 마지막으로 받은 세션 �
 let hiddenOpen = false;                       // '숨긴 항목'을 펴 뒀나 (7초 폴링이 다시 그려도 유지)
 let projFilter = "";                          // 사이드바 검색어 — 변수로 들고 있어 폴링 재렌더에도 유지
 
-// 이름·경로 어느 쪽에 걸려도 찾는다. 대소문자는 무시 — 검색칸에서 소문자만 쳐도 DGagent 가 나오게.
+// 이름·경로 어느 쪽에 걸려도 찾는다. 대소문자는 무시 — 검색칸에서 소문자만 쳐도 MyProject 가 나오게.
 function projMatch(s) {
   if (!projFilter) return true;
   const q = projFilter.toLowerCase();
@@ -137,7 +137,7 @@ async function loadSessions() {
     const { sessions, restorable } = await res.json();
     lastSessions = sessions;
     setRestorable(restorable ?? 0);
-    // 즐겨찾기가 상태순보다 위다 — 대표가 올려 둔 것은 '무조건 맨 위, 올린 순서대로'(대표 지시).
+    // 즐겨찾기가 상태순보다 위다 — 사용자가 올려 둔 것은 '무조건 맨 위, 올린 순서대로'.
     // 그 아래로만 기존 규칙(결재>진행중>완료>그 외, 같은 상태 안에서 이름순)이 이어진다.
     sessions.sort((a, b) => (favRank(a) - favRank(b)) ||
                             (metaOf(a).order - metaOf(b).order) || a.name.localeCompare(b.name));
@@ -180,7 +180,7 @@ function sessionRow(s) {
   st.className = `st ${meta.cls}`;
   li.append(st, rowActs(s, li));
   // 살아 있는 것은 화면 전환뿐이라 한 번에 연다. 꺼진 것은 누르는 순간 tmux 세션이 새로 서므로
-  // 반드시 되묻는다 — 목록을 스치기만 해도 프로젝트가 우수수 켜지던 문제(대표 지적).
+  // 반드시 되묻는다 — 목록을 스치기만 해도 프로젝트가 우수수 켜지던 문제.
   li.onclick = () => (s.alive ? openTerminal(s) : askOpen(s, li));
   return li;
 }
@@ -191,7 +191,7 @@ function sessionRow(s) {
 function rowActs(s, li) {
   const acts = document.createElement("div");
   acts.className = "row-acts";
-  // 글자 버튼('끄기')이 커서 자꾸 잘못 눌렸다(대표 지적) — 작은 아이콘 세로 스택으로.
+  // 글자 버튼('끄기')이 커서 자꾸 잘못 눌렸다 — 작은 아이콘 세로 스택으로.
   // 뜻은 title/aria 로 남긴다. 순서(즐겨찾기→끄기→숨기기)는 테스트 계약이라 바꾸지 않는다:
   // 끄기는 .danger, 숨기기는 늘 :last-child. 그래서 새로 든 즐겨찾기는 스택 맨 앞에 선다.
   acts.append(actBtn(isFav(s) ? "★" : "☆", "", () => setFavorite(s.name, !isFav(s)), "즐겨찾기"));
@@ -228,7 +228,7 @@ function askOpen(s, li) {
   const box = document.createElement("div");
   box.className = "row-confirm";
   box.onclick = e => e.stopPropagation();
-  // 무엇으로 켤지 여기서 고른다 — 설정의 기본 에이전트를 바꾸지 않고 이번 한 번만(대표 지시 2026-09-05).
+  // 무엇으로 켤지 여기서 고른다 — 설정의 기본 에이전트를 바꾸지 않고 이번 한 번만.
   box.append(el("span", `'${s.name}' 터미널을 켭니다 — 꺼져 있던 세션이 새로 시작됩니다.`),
              actBtn("클로드로 켜기", "", () => openTerminal(s, "claude")),
              actBtn("코덱스로 켜기", "", () => openTerminal(s, "codex"), "codex --yolo 로 시작"),
@@ -360,7 +360,7 @@ async function refreshSummary() {
     }
     document.getElementById("sum-alive").textContent = `세션 ${alive}개 켜짐`;
     const btn = document.getElementById("sum-pending");
-    // 상태를 다 말한다(대표 지시) — 결재만 말하면 "0건"인데 지시 넣을 세션이 쌓인 걸 못 본다.
+    // 상태를 다 말한다 — 결재만 말하면 "0건"인데 지시 넣을 세션이 쌓인 걸 못 본다.
     // 꺼짐은 0건이면 생략(늘 붙이면 세 토막이 상시 노이즈). 폰은 '건' 없이 짧게.
     const parts = isDesktop()
       ? [`결재 대기 ${pending}건`, `지시 대기 ${waiting}건`]
@@ -445,7 +445,7 @@ function paintHeader() {
   markActive();
 }
 
-// ---------- 병렬 터미널 탭 — 같은 프로젝트에서 터미널 여러 개 (Zed 차용, 대표 지시) ----------
+// ---------- 병렬 터미널 탭 — 같은 프로젝트에서 터미널 여러 개 (Zed 차용) ----------
 // 탭 = "<프로젝트>@N"(2~9) 이름의 독립 tmux 세션(브릿지 sessions.py 의 _TAB_RE 와 한 쌍).
 // 목록의 정본은 서버(sessions[].tabs)다 — 폰에서 연 탭도 맥 폴링(7초)에 따라온다.
 // 방금 + 로 연 탭은 서버가 따라잡기 전까지 currentSession 으로 보강해 바로 보인다.
@@ -524,7 +524,7 @@ window.addEventListener("focus", () => {
 
 // ---------- 새 프로젝트 (사이드바 ＋) ----------
 // 폴더는 <프로젝트 루트>/<이름> 하나만 만든다 — 세션 이름·파일 패널·업로드가 전부 이 폴더 기준이다.
-// 만들자마자 그 터미널을 연다(대표 지시: "이름 정하면 바로 실행"). 설정한 시작 에이전트가 뜬다.
+// 만들자마자 그 터미널을 연다(이름을 정하면 바로 실행). 설정한 시작 에이전트가 뜬다.
 // 무엇으로 시작할지는 입력칸 아래 두 버튼(클로드·코덱스)에서 고른다. Enter = 클로드(기본 그림).
 const projNewInput = () => document.getElementById("proj-new-name");
 const projNewBox = () => document.getElementById("proj-new-box");
@@ -588,7 +588,7 @@ async function syncCopyToClipboard(pane = activePane) {
   } catch { /* 포커스 없음 등 — 조용히 지나간다(맥에서는 pbcopy 가 이미 받아 뒀다) */ }
 }
 
-// ---------- 파일 경로 링크 — 터미널 속 경로를 Ctrl/⌘+클릭하면 파일 패널로 (대표 지시) ----------
+// ---------- 파일 경로 링크 — 터미널 속 경로를 Ctrl/⌘+클릭하면 파일 패널로 ----------
 // URL 은 web-links 애드온 몫이라 여기서 제외한다. 두 모양만 링크로 본다:
 // ①슬래시 든 경로(마지막 조각에 확장자 필수 — "결재/승인" 같은 말이 걸리지 않게)
 // ②확장자 목록에 든 낱파일 이름. 끝의 :줄번호 는 허용하고 열 때 떼어낸다.
@@ -669,7 +669,7 @@ async function openPathFromTerminal(raw, pane = activePane) {
   const base = baseOf(pane.session.name);
   if (await pathExistsIn(base, p)) { fpOpenFromTerminal(p); return; }   // 이 프로젝트 → 파일 패널
   // ★실사고(2026-08-15): 클로드가 말한 상대경로가 볼트 등 '다른 프로젝트' 기준이라 404 —
-  // 전 프로젝트를 훑어 딱 한 곳에만 있으면 맥 기본 앱으로 연다(대표: "프로그램으로 열어도 좋아").
+  // 전 프로젝트를 훑어 딱 한 곳에만 있으면 맥 기본 앱으로 연다.
   const others = lastSessions.map(s => s.name).filter(n => n !== base);
   const hits = (await Promise.all(others.map(async n => (await pathExistsIn(n, p)) ? n : null)))
     .filter(Boolean);
@@ -715,7 +715,7 @@ async function postOpen(body, okMsg) {
   }
 }
 
-// ---------- 터미널 우클릭 메뉴 (대표 지시) ----------
+// ---------- 터미널 우클릭 메뉴 ----------
 // 브라우저 메뉴·tmux 메뉴를 막았으니 대신 쓸 메뉴를 우리가 준다. 커서 밑에 경로가 있으면
 // 그 파일을 여는 항목이, 없으면 붙여넣기·복사만 뜬다. 메뉴 상자는 파일 패널 것을 함께 쓴다.
 function pathAtEvent(e, pane) {
@@ -734,8 +734,8 @@ function pathAtEvent(e, pane) {
 
 const isTouchPointer = () => matchMedia("(pointer: coarse)").matches;
 
-// 터미널이 찍은 localhost 링크를 '이 기기가 닿는 주소'로 바꾼다(대표 지적 2026-08-22: 폰에서
-// "로컬로 열어 보라"는 링크가 안 열린다). localhost·127.0.0.1 은 폰에선 폰 자신이다 — 이 화면을
+// 터미널이 찍은 localhost 링크를 '이 기기가 닿는 주소'로 바꾼다(폰에서
+// "로컬로 열어 보라"는 링크가 안 열렸다). localhost·127.0.0.1 은 폰에선 폰 자신이다 — 이 화면을
 // 내준 호스트(테일넷 이름)로 바꾸면 같은 테일넷의 폰이 그 포트에 닿는다(3010 실측 200). 서비스가
 // 루프백에만 묶여 있으면 못 닿지만, 그건 지금도 못 여는 것이라 잃는 게 없다. 사설 LAN IP(172.x)는
 // 손대지 않는다 — 밖에서 닿는지 알 수 없다.
@@ -786,7 +786,7 @@ function termMenu(e, pane) {
   m.style.top = `${Math.min(e.clientY, innerHeight - m.offsetHeight - 8)}px`;
 }
 
-// ---------- 전체 끄기 / 전체 복원 (대표 지시 2026-08-31) ----------
+// ---------- 전체 끄기 / 전체 복원 ----------
 // 끄기는 되돌릴 수 없다 — 세션 안에서 돌던 클로드가 함께 죽는다. 그래서 헤더 아래 띠에서 한 번
 // 되묻는다(모달은 이 앱의 관례상 안 쓴다). 복원은 '지금 열 수 있는 전부'가 아니라 '끄기 직전에
 // 열려 있던 것'만 — 그 명단은 브릿지가 끄기 직전에 파일로 남긴다.
@@ -868,7 +868,7 @@ async function restoreAll() {
   refreshSummary();
 }
 
-// ---------- CPU 팝업 — htop 을 전용 tmux 세션(_frogtop)으로 (대표 지시) ----------
+// ---------- CPU 팝업 — htop 을 전용 tmux 세션(_frogtop)으로 ----------
 // 메인 터미널(term/ws)과 완전히 분리된 작은 xterm 하나를 팝업에 띄운다. 세션이 tmux 라
 // 어느 기기에서 열어도 같은 htop 이고, 닫기는 detach 일 뿐이라 htop 은 q 를 누를 때만 죽는다.
 let cpuTerm = null, cpuWs = null, cpuObs = null;
@@ -919,12 +919,12 @@ function closeCpu() {                        // detach 만 — htop 세션은 tm
 function macEditKeys(e, pane) {
   const term = pane.term;
   if (e.type !== "keydown") return true;
-  // ⇧Enter = 줄바꿈(전송 아님) — Zed·VS Code 와 같은 동작(대표 지시). 터미널은 Enter 에 ⇧를
+  // ⇧Enter = 줄바꿈(전송 아님) — Zed·VS Code 와 같은 동작. 터미널은 Enter 에 ⇧를
   // 못 실으므로, 클로드 공식 /terminal-setup 이 iTerm·VS Code 에 심는 것과 같은 백슬래시+CR 을
   // 보낸다. 클로드 입력창은 이걸 줄바꿈으로 받고, zsh 프롬프트에서도 줄 계속(continuation)이다.
   if (e.shiftKey && e.key === "Enter") {
     e.preventDefault();
-    // ★대표 실사고 2건의 균형점(2026-08-15). ①미확정 글자보다 줄바꿈이 먼저 나가 글자가
+    // ★실사고 2건의 균형점(2026-08-15). ①미확정 글자보다 줄바꿈이 먼저 나가 글자가
     // 다음 줄로 내려갔다 → 조합 중이면 이 키를 삼킨다(IME 는 이 키로 확정만 하고, 줄바꿈은
     // 다음 누름에). ②그 1차 처방이던 blur→focus 강제확정은 맥 IME 의 조합 연결을 그 칸에
     // 대해 죽여 이후 타이핑이 전부 자모로 풀렸다 — blur 는 절대 쓰지 않는다.
@@ -934,7 +934,7 @@ function macEditKeys(e, pane) {
     pane.send("\\\r");
     return false;
   }
-  // 윈도우 습관 지원(대표 요청 2026-08-15): 맥 크롬에서 Ctrl+C/V 는 복사·붙여넣기가 아니라서
+  // 윈도우 습관 지원: 맥 크롬에서 Ctrl+C/V 는 복사·붙여넣기가 아니라서
   // (⌘ 가 정답, Ctrl+C 는 중단신호) "복사했는데 안 붙는다"가 됐다. 윈도우 터미널 방식으로 직접
   // 처리한다 — Ctrl+C 는 '선택이 있으면 복사, 없으면 원래대로 중단', Ctrl+V 는 글자·이미지
   // 붙여넣기. e.code(물리 키)라 한글 자판 상태와 무관하게 잡힌다.
@@ -945,7 +945,7 @@ function macEditKeys(e, pane) {
   }
   // Ctrl+C — 복사냐 중단신호냐. ①브라우저 선택이 있으면(⌥드래그) 복사 ②방금(5초 안) 드래그로
   // 골라 놓았으면 복사(tmux 선택이라 브라우저는 '선택 없음'으로 보인다 — 이걸 SIGINT 로 보내
-  // 클로드를 끊어 먹던 것이 대표가 겪은 그 사고다) ③그 외에는 원래대로 중단신호.
+  // 클로드를 끊어 먹던 것이 실제로 겪은 그 사고다) ③그 외에는 원래대로 중단신호.
   if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.code === "KeyC") {
     if (term?.hasSelection()) {
       navigator.clipboard?.writeText(term.getSelection()).catch(() => {});
@@ -960,14 +960,14 @@ function macEditKeys(e, pane) {
       return false;
     }
   }
-  // ⌘Z = 실행 취소(대표 요청). 터미널엔 ⌘ 개념이 없으니 같은 뜻의 제어문자로 옮긴다 —
+  // ⌘Z = 실행 취소. 터미널엔 ⌘ 개념이 없으니 같은 뜻의 제어문자로 옮긴다 —
   // 클로드 코드 입력창도 zsh 입력줄도 Ctrl+_(0x1f)가 undo 다(2026-08-15 실측).
   if (e.metaKey && !e.ctrlKey && !e.altKey && e.code === "KeyZ") {
     e.preventDefault();
     pane.send("\x1f");
     return false;
   }
-  // ⌘← / ⌘→ = 줄 처음·끝(맥 텍스트 관례, 대표 요청 2026-08-22). 지금까지는 브라우저가 ⌘← 를
+  // ⌘← / ⌘→ = 줄 처음·끝(맥 텍스트 관례). 지금까지는 브라우저가 ⌘← 를
   // '뒤로 가기'로 먹어 아무 일도 안 났다. 터미널엔 ⌘ 가 없으니 Home/End 키와 같은 바이트로 옮긴다 —
   // tmux 도 클로드 입력줄도 그대로 알아듣는다. 커서키 모드(DECCKM)를 켠 프로그램은 ESC O 꼴을
   // 기대하므로 xterm 이 실제 Home/End 에 보내는 것과 똑같이 가른다. 한글 조합 중엔 IME 몫으로 둔다.
@@ -1177,7 +1177,7 @@ function imeLog(tag, val) {
 }
 
 function imeDebugPanel() {
-  // 버튼을 로그와 같은 줄에 두었더니 긴 글자에 밀려 화면 밖으로 나갔다(대표 지적) —
+  // 버튼을 로그와 같은 줄에 두었더니 긴 글자에 밀려 화면 밖으로 나갔다 —
   // 버튼은 화면 오른쪽 위에 따로 못박고, 로그 내용은 아예 띄우지 않는다(읽는 건 나다).
   imeLogBox = document.createElement("div");
   imeLogBox.id = "ime-debug";
@@ -1253,7 +1253,7 @@ async function uploadAndType(file, pane = activePane) {
 // Ctrl+V 전용 — 클립보드를 직접 읽는다(⌘V 는 브라우저가 paste 이벤트로 알아서 처리).
 // 이미지가 있으면 업로드해 경로를 찍고, 아니면 글자를 xterm paste 로(여러 줄도 한 덩어리).
 async function pasteFromClipboard(pane = activePane) {
-  // 재시도 계약(대표 실사고 2026-08-15): 휠클릭 캡처 직후엔 클립보드에 이미지가 실리기까지
+  // 재시도 계약: 휠클릭 캡처 직후엔 클립보드에 이미지가 실리기까지
   // 시차가 있다 — 바로 붙여넣으면 빈 클립보드를 읽고 조용히 실패했다. 최대 ~1.2초 기다려 잡는다.
   // (창 포커스 복귀 직전의 "Document is not focused" 도 같은 재시도로 넘어간다.)
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -1295,7 +1295,7 @@ document.addEventListener("paste", e => {
   files.forEach(f => pasteAny(f, pane));
 }, true);
 
-// 붙여넣은 '파일' 한 개의 처리 순서 — 사본은 마지막 수단이다(대표 지시).
+// 붙여넣은 '파일' 한 개의 처리 순서 — 사본은 마지막 수단이다.
 //   ① 원본 찾기(파인더에서 ⌘C 한 파일: 이름·크기·수정시각으로 특정)
 //   ② 이미지면 캡처 원본(같은 픽셀 크기의 방금 찍은 캡처 파일)
 //   ③ 그래도 못 찾으면 업로드 — 폰에서 고른 사진처럼 맥에 원본이 없는 경우다
@@ -1307,8 +1307,8 @@ async function pasteAny(file, pane) {
   uploadAndType(file, pane);
 }
 
-// 붙여넣은 이미지 — 사본을 만들기 전에 '캡처 원본이 파일로 남아 있나'부터 본다(대표 지시:
-// "캡쳐 떴으면 캡쳐 폴더의 경로를 던져주면 되는데 매번 사본을 만든다"). 맥 캡처는 설정된
+// 붙여넣은 이미지 — 사본을 만들기 전에 '캡처 원본이 파일로 남아 있나'부터 본다(캡처가
+// 파일로 있으면 매번 사본을 만들지 말고 그 경로를 넘긴다). 맥 캡처는 설정된
 // 폴더에 파일로도 남으므로, 붙여넣은 그림과 픽셀 크기가 같은 최신 캡처를 브릿지가 찾아 준다.
 async function pasteImage(blob, type, name, pane = activePane) {
   try {
@@ -1336,7 +1336,7 @@ document.addEventListener("drop", e => {
   if (document.getElementById("term-view").hidden) return;
   if (e.target?.closest?.("#browser-panel")) return;   // 패널 위에 떨어뜨린 것은 터미널 업로드가 아니다
   // 파일 패널에서 끌어온 것(files.js 가 심는 자체 타입) — 업로드가 아니라 그 경로를 입력한다.
-  // 파일·폴더 모두 같은 길(VS Code·Zed 의 '트리에서 터미널로 드래그' — 대표 지시).
+  // 파일·폴더 모두 같은 길(VS Code·Zed 의 '트리에서 터미널로 드래그').
   const frogPath = e.dataTransfer.getData("application/x-frog-path");
   const pane = paneAt(e.target);             // 떨어뜨린 칸 — 칸 밖(머리줄 등)이면 활성 칸
   if (frogPath) { pane?.send(shellQuote(frogPath) + " "); pane?.term?.focus(); return; }
@@ -1349,7 +1349,7 @@ document.addEventListener("drop", e => {
 
 // 드롭 처리의 최상위 — 항목마다 ①맥에서 원본을 찾으면 그 진짜 경로를 찍고(사본 없음),
 // ②못 찾으면(폰에서 끌었거나 미색인 위치) 지금까지처럼 업로드 후 사본 경로를 찍는다.
-// 배경(대표 지적): 전부 사본으로 가니 다른 폴더의 같은 이름이 뭉개지고 캐시만 늘었다.
+// 배경: 전부 사본으로 가니 다른 폴더의 같은 이름이 뭉개지고 캐시만 늘었다.
 async function dropItems(entries, pane) {
   for (const en of entries) {
     if (en.isDirectory) {
@@ -1464,7 +1464,7 @@ document.querySelectorAll("#keybar [data-seq]").forEach(btn => {
 document.getElementById("ctrl-key").onclick = () => { setCtrl(!ctrlArmed); term?.focus(); };
 
 // 📎 사진·파일 넣기 — 폰에는 파인더 드래그도, 쓸 만한 클립보드 이미지도 없어서 여기가 유일한
-// 길이다(대표 지적). 규칙은 드래그와 같게 둔다: 맥에 원본이 있으면 그 경로를 찍고(사본 없음),
+// 길이다. 규칙은 드래그와 같게 둔다: 맥에 원본이 있으면 그 경로를 찍고(사본 없음),
 // 폰 사진처럼 맥에 없는 것만 업로드한다. 그래야 같은 파일이 두 벌로 갈리지 않는다.
 const filePick = document.getElementById("file-pick");
 document.getElementById("pick-file").onclick = () => filePick.click();
@@ -1494,7 +1494,7 @@ if (!REDIRECTING) {                          // 문패 화면에선 부르지 �
   refreshStatusMeta();
   setInterval(poll, 7000);                   // 7초 폴링 — 요약·대시보드는 항상, 목록·인박스는 보일 때만
   setInterval(refreshStatusMeta, 60000);     // 계정·사용량 — 서버 캐시(60초·5분)에 맞춘 긴 주기
-  // 오래 비워 둔 창으로 돌아왔을 때(대표 지적: "한참 뒤에 들어가면 옛 화면이 몇 초 남는다").
+  // 오래 비워 둔 창으로 돌아왔을 때(한참 뒤에 들어가면 옛 화면이 몇 초 남던 문제).
   // 백그라운드에서 브라우저가 타이머를 조여 두면 화면 값이 낡은 채로 멈춰 있고, 잠들었다 깬
   // 뒤엔 소켓이 죽은 줄도 모른 채 백오프(최대 15초)를 기다린다. 돌아오는 즉시 둘 다 되살린다.
   document.addEventListener("visibilitychange", () => {

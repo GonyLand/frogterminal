@@ -24,8 +24,8 @@ const bpKey = project => `frog.browser.${project}`;
 function bpSaved(project) {
   try { return JSON.parse(localStorage.getItem(bpKey(project)) || "null"); } catch { return null; }
 }
-// 이 프로젝트의 패널 기억 — {open, mode, url, port}. ★열림 여부까지 프로젝트별이다(대표 지적 2026-09-21:
-// "오토프로그에서 열었는데 다른 프로젝트에 와도 열려 있고, 여기서 끄면 오토프로그도 꺼져 있다"). 패널의 hidden 은
+// 이 프로젝트의 패널 기억 — {open, mode, url, port}. ★열림 여부까지 프로젝트별이다(전역이면 한
+// 프로젝트에서 연 패널이 다른 프로젝트에서도 열려 있고, 여기서 끄면 그쪽도 꺼진다). 패널의 hidden 은
 // 화면 하나뿐이라 전역이었다 — 갈아탈 때마다 그 프로젝트의 open 값을 보고 열거나 접는다.
 function bpSave(project, patch) {
   if (project) localStorage.setItem(bpKey(project), JSON.stringify({ ...(bpSaved(project) || {}), ...patch }));
@@ -212,7 +212,7 @@ async function bpRenew() {
 // 대개 프레임을 거부한다 — 3초 안내가 새 탭으로 안내한다). localhost 주소는 이 기기의 localhost 라 뜻이 없으니
 // 포트만 뽑아 서비스로 바꾼다.
 // 주소가 아닌 글("네이버")은 호스트명으로 해석하지 않는다 — 브라우저처럼 검색으로 보내되, 검색 사이트는 프레임을
-// 거부하므로 새 탭에서 연다(2026-09-20 대표 실사용: "네이버" → xn--… DNS 실패 화면).
+// 거부하므로 새 탭에서 연다(호스트명으로 해석하면 "네이버" → xn--… DNS 실패 화면이 뜬다).
 const bpLooksLikeHost = h => /^(\[[0-9a-f:.]+\]|localhost|(\d{1,3}\.){3}\d{1,3}|[a-z0-9-]+(\.[a-z0-9-]+)+)$/i.test(h);
 function bpGo(raw) {
   if (!raw) return;

@@ -1,14 +1,16 @@
 # 🐸 frogterminal
 
+**한국어** · [English](README.en.md)
+
 맥에서 돌아가는 **tmux 세션을 폰·노트북 브라우저에서 그대로 쓰는 웹 터미널**입니다. 프로젝트 폴더마다 tmux 세션 하나, 그 안에서 Claude Code·Codex 같은 AI 코딩 에이전트를 띄워 놓고 어디서든 이어서 봅니다.
+
+> **macOS 전용입니다.** 브릿지(서버)는 맥에서만 돌아갑니다(tmux·`open`·`mdfind`·launchd 에 의존). 리눅스·윈도우 서버는 지원하지 않습니다. 다만 **접속하는 쪽**은 브라우저가 있는 어떤 기기든 됩니다 — 아래 2절.
 
 - 여러 칸(1·4·6·8분할)으로 프로젝트 여러 개를 한 화면에
 - 에이전트가 물어보고 멈춘 것들을 모아 보는 **결재 인박스**(Claude Code 훅 연동, 선택)
 - 프로젝트 파일 보기·편집, 드래그 업로드, 사진 붙이기
 - 폰 소프트 키보드용 특수키 바, 한글 입력(IME) 대응
 - 브릿지는 **127.0.0.1 에만** 뜨고, 밖으로 내는 길은 사용자가 고른다(권장: Tailscale Serve)
-
-English summary at the bottom.
 
 ## 1. 구조
 
@@ -20,14 +22,27 @@ English summary at the bottom.
 
 화면(HTML·JS)은 브릿지가 직접 내줍니다. 외부 CDN 은 xterm.js 와 글꼴 둘뿐이고 전부 무결성 해시(SRI)가 걸려 있습니다.
 
-## 2. 필요한 것
+## 2. 어떤 기기에서 쓰나 — 맥 하나에 전부 연결
 
-- macOS (tmux·`open`·`mdfind`·launchd 를 쓴다 — 리눅스는 아직 아님)
+```
+                 ┌──────────── Tailscale(테일넷) ────────────┐
+ 메인 맥 ◀────────┤  윈도우 PC · 아이폰 · 안드로이드 · 아이패드 · 다른 맥  │
+ (브릿지+tmux)    └─────────── 브라우저만 있으면 됨 ───────────┘
+```
+
+- **호스트는 메인 맥 한 대**입니다. 터미널·에이전트·파일은 전부 그 맥 안에서 돌아갑니다.
+- **접속 기기는 Tailscale 앱을 깔고 같은 계정으로 로그인**하면 끝입니다. 윈도우 PC, 아이폰·안드로이드 폰, 아이패드, 다른 맥 모두 같습니다. 별도 클라이언트 설치 없이 브라우저에서 `https://<맥의 MagicDNS 이름>` 을 엽니다.
+- 처음 한 번 토큰을 넣으면 그 기기·브라우저는 1년 기억합니다. 폰에서는 "홈 화면에 추가"(PWA)로 앱처럼 쓸 수 있습니다(PWA 는 브라우저와 따로 기억하므로 토큰을 한 번 더 넣습니다).
+- 집 밖(LTE·다른 와이파이)에서도 Tailscale 이 켜져 있으면 같은 주소로 들어옵니다. 공개 인터넷(Funnel)으로는 열지 않도록 브릿지가 막습니다.
+
+## 3. 필요한 것
+
+- **macOS** (tmux·`open`·`mdfind`·launchd 를 쓴다 — 리눅스·윈도우 서버는 지원하지 않음)
 - Python 3.12 이상, `tmux` (`brew install tmux`)
 - 권장: [Tailscale](https://tailscale.com) — 테일넷 안에서만 열고, 접속자 신원을 헤더로 받는다
 - 선택: Claude Code / Codex CLI (없어도 셸 세션은 된다)
 
-## 3. 설치
+## 4. 설치
 
 ```bash
 git clone <this-repo> frogterminal && cd frogterminal
@@ -55,7 +70,7 @@ tailscale serve --bg --https=443 http://127.0.0.1:7788
 
 브라우저에서 브릿지 주소를 열면 **토큰을 한 번 묻습니다**(기기마다 1년 기억). `cat ~/.frogterminal/token` 값을 붙이거나 `https://<주소>/?token=<토큰>` 으로 엽니다. 토큰을 바꾸려면 파일을 지우고 재시작하면 새로 만들어지고 모든 기기가 다시 로그인합니다.
 
-## 4. 설정 — `~/.frogterminal/bridge.json`
+## 5. 설정 — `~/.frogterminal/bridge.json`
 
 | 키 | 기본 | 뜻 |
 |---|---|---|
@@ -68,7 +83,7 @@ tailscale serve --bg --https=443 http://127.0.0.1:7788
 
 파일이 깨져 있으면 조용히 기본값으로 가지 않고 **기동을 거부**합니다. 화면의 ⚙ 설정(에이전트·bypass·이어서 시작·별칭·프로젝트 루트)은 `~/.frogterminal/settings.json` 에 따로 저장됩니다.
 
-## 5. Claude Code 결재 인박스(선택)
+## 6. Claude Code 결재 인박스(선택)
 
 Claude Code 가 질문하고 멈추면 카드가 뜨고, 카드에서 답하면 그 터미널에 입력됩니다. 전역 `~/.claude/settings.json` 에 훅 6개를 넣어야 합니다.
 
@@ -78,7 +93,7 @@ python3 hooks/install_hooks.py              # 등록(첫 변경 전 settings.jso
 python3 hooks/install_hooks.py --uninstall  # 우리가 넣은 것만 뺀다
 ```
 
-## 6. 보안 모델 — 꼭 읽을 것
+## 7. 보안 모델 — 꼭 읽을 것
 
 이 프로그램은 **당신 계정 권한으로 돌아가는 원격 셸**입니다. 들어온 사람은 당신이 터미널에서 할 수 있는 모든 것을 할 수 있습니다.
 
@@ -92,7 +107,7 @@ python3 hooks/install_hooks.py --uninstall  # 우리가 넣은 것만 뺀다
 
 취약점 신고는 `SECURITY.md`.
 
-## 7. 개발·테스트
+## 8. 개발·테스트
 
 ```bash
 .venv/bin/pip install -r requirements-dev.txt
@@ -107,15 +122,3 @@ python3 hooks/install_hooks.py --uninstall  # 우리가 넣은 것만 뺀다
 ## License
 
 MIT — `LICENSE`.
-
----
-
-## English
-
-**frogterminal** is a web terminal for macOS that exposes your tmux sessions (one per project folder) to a phone or laptop browser, built for keeping AI coding agents (Claude Code, Codex) running and answerable from anywhere.
-
-- The bridge (Python aiohttp) binds to **127.0.0.1 only**; you choose how to expose it (Tailscale Serve recommended; Funnel to the public internet is refused at startup).
-- Two authentication layers: an optional Tailscale identity header (when `allowedLogins` is set in `~/.frogterminal/bridge.json`) and a mandatory token cookie (`~/.frogterminal/token`, generated on first start). Ten failed logins in ten minutes lock the login for the window.
-- Setup: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`, copy `bridge.example.json` to `~/.frogterminal/bridge.json`, run `scripts/install_launchd.sh`, then open the bridge URL and paste the token once per device.
-- This is a remote shell running with your user's privileges. Read section 6 before exposing it. Single-user by design.
-- Tests: `pytest bridge/tests` (uses real tmux) and `pytest tests` (Playwright). MIT licensed.

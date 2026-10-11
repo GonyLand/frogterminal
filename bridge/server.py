@@ -195,7 +195,7 @@ OVERVIEW = web.AppKey("overview", OverviewCache)
 # new-session -A 라 방금 끈 세션을 에이전트까지 새로 켜 버렸다 — 폰에서 끈 것이 맥 칸에서 되살아남
 # (멀티 칸 2026-10-11). 그래서 '끈 것'만 기억했다가 저절로 붙기를 거절한다. /exit 로 끝난 세션은 여기
 # 없으므로 다시 붙으면 '이어서 시작'으로 새로 뜬다(attach_cmd 주석의 의도된 동작 그대로).
-# 대표가 직접 여는 접속(re 없음)이나 [복원]이 오면 지운다. 메모리에만 둔다 — 브릿지를 다시 켜면 잊는다.
+# 사용자가 직접 여는 접속(re 없음)이나 [복원]이 오면 지운다. 메모리에만 둔다 — 브릿지를 다시 켜면 잊는다.
 KILLED = web.AppKey("killed", set)
 WS_KILLED = 4410                                    # 웹이 '다시 붙지 말 것'으로 읽는 닫기 코드
 # 세션별로 '여러 칸으로 보는 중'인 연결들 — 하나라도 있으면 tmux 표시(@frog_compact)를 달고, 다 떠나면 뗀다.
@@ -236,7 +236,7 @@ async def api_summary(request):
     pending = sum(1 for c in ov["cards"]
                  if c.get("kind") in decisions.DECISION_KINDS and c.get("live"))
     # 지시 대기 = 할 말을 마치고 쉬는 살아있는 세션(done·idle) — 인박스 '완료' 섹션과 같은 셈법.
-    # 헤드라인이 결재만 말하면 "결재 0건"인데 인박스엔 지시 넣을 세션이 쌓여 있는 걸 못 본다(대표 지적).
+    # 헤드라인이 결재만 말하면 "결재 0건"인데 인박스엔 지시 넣을 세션이 쌓여 있는 걸 못 본다.
     waiting = sum(1 for c in ov["cards"]
                   if c.get("kind") not in decisions.DECISION_KINDS and c.get("live"))
     # 죽은 세션 수는 따로 준다 — 결재 0건이어도 '살펴야 할 것'이 있으면 진입점이 알려야 한다
@@ -249,7 +249,7 @@ async def api_summary(request):
 async def api_sessions(request):
     items = await asyncio.to_thread(sessions.merged_sessions)
     # 복원거리 수 — 헤더의 [복원] 버튼을 켤지 끌지의 근거. 없으면 버튼이 꺼진 채로 있어야
-    # 대표가 눌러 보고서야 "복원할 게 없다"는 말을 듣는 일이 없다.
+    # 사용자가 눌러 보고서야 "복원할 게 없다"는 말을 듣는 일이 없다.
     restorable = len((await asyncio.to_thread(restore.load_snapshot))["sessions"])
     states = (await request.app[OVERVIEW].get())["states"]
     for s in items:
@@ -280,7 +280,7 @@ async def _json_object(request):
 
 
 async def api_session_kill(request):
-    """대표가 콕 집어 지목한 tmux 세션 하나를 끈다 — '다른 세션은 안 죽인다' 원칙의 유일한 예외.
+    """사용자가 콕 집어 지목한 tmux 세션 하나를 끈다 — '다른 세션은 안 죽인다' 원칙의 유일한 예외.
 
     그 안에서 돌던 것(클로드 포함)이 같이 죽으므로 되묻기는 웹이 하고, 여기서는 반드시 남긴다.
     """
@@ -300,12 +300,12 @@ async def api_session_kill(request):
     request.app[KILLED].add(project)                 # 다른 기기의 칸이 저절로 다시 켜지 않게
     _audit(f"kill user={request.headers.get('Tailscale-User-Login')} "     # 개행 든 이름으로 가짜
            f"project={project!r} killed={killed}")                        # 줄을 위조하지 못하게 !r
-    # 이미 꺼져 있었으면 killed=False — 대표가 두 번 눌러도 에러창이 뜨면 안 된다(멱등).
+    # 이미 꺼져 있었으면 killed=False — 사용자가 두 번 눌러도 에러창이 뜨면 안 된다(멱등).
     return web.json_response({"ok": True, "killed": killed})
 
 
 async def api_sessions_kill_all(request):
-    """헤더의 [전체 끄기] — 사이드바에 보이는 살아있는 터미널을 전부 끈다 (대표 지시 2026-08-31).
+    """헤더의 [전체 끄기] — 사이드바에 보이는 살아있는 터미널을 전부 끈다.
 
     되돌릴 수 없는 조작이라 되묻기는 웹이 하고, 여기서는 끄기 전에 명단부터 남긴다 —
     그 명단이 [복원]의 유일한 재료다. 무엇을 끄고 무엇을 못 껐는지 이름으로 돌려준다.
@@ -494,7 +494,7 @@ async def api_open(request):
     """파일 패널 우클릭 → 그 파일을 '맥에서' 연다(PDF·HTML·큰 이미지·SVG·HEIC에도 쓰는 길).
 
     경로 검증은 읽기 API 와 같은 한 겹(files.safe_path 계열) — 프로젝트 밖·비밀파일은 404.
-    GUI 는 맥 화면에 뜬다(폰에서 눌러도 해가 없고, 대표 요구도 데스크톱 전용이다).
+    GUI 는 맥 화면에 뜬다(폰에서 눌러도 해가 없고, 요구 범위도 데스크톱 전용이다).
     """
     body = await _json_object(request)
     if body is None:
@@ -526,7 +526,7 @@ async def api_open(request):
 
 
 async def api_mkdir(request):
-    """파일 패널의 새 폴더(대표 지시). 검증은 읽기와 같은 잣대 — 밖·비밀이름은 404 로 뭉갠다."""
+    """파일 패널의 새 폴더. 검증은 읽기와 같은 잣대 — 밖·비밀이름은 404 로 뭉갠다."""
     body = await _json_object(request)
     if body is None:
         return web.json_response({"error": "bad body"}, status=400)
@@ -673,7 +673,7 @@ async def api_project_new(request):
         return web.json_response({"error": "mkdir failed"}, status=500)
     # 빈 폴더는 프로젝트 판정(.git·마커)에 걸려 다음 새로고침에 사라진다 — 명단에 올려 붙잡는다.
     # 명단 쓰기가 실패해도 폴더는 이미 생겼으니 200 이다(다음 attach 가 다시 올릴 길은 없지만
-    # 대표가 파일 하나만 넣어도 살아나고, 감사로그에 남아 추적된다).
+    # 사용자가 파일 하나만 넣어도 살아나고, 감사로그에 남아 추적된다).
     try:
         sessions.mark_created(name)
     except OSError:
@@ -774,7 +774,7 @@ async def ws_terminal(request):
 
     # 처음부터 실제 화면 크기로 연다. 80×24로 열고 나중에 키우면 tmux 가 그 사이 화면을 한 번
     # 그리고 리사이즈 때 통째로 다시 그린다 — 그 잔상이 xterm 스크롤백에 쌓여 클로드 배너가
-    # 여러 번 찍힌 화면이 됐다(대표 스크린샷 실측). 값이 없거나 이상하면 80×24.
+    # 여러 번 찍힌 화면이 됐다(스크린샷 실측). 값이 없거나 이상하면 80×24.
     try:
         cols = _clamp(int(request.query.get("cols", 80)))
         rows = _clamp(int(request.query.get("rows", 24)))

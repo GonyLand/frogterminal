@@ -129,7 +129,7 @@ def owner_of_this_hook() -> tuple:
 # `hook_event_name:"Notification",message:d,title:_,notification_type:C`).
 # 예전엔 문구만 보고 "waiting 이 없으면 전부 결재"로 갈랐는데, 클로드 코드가 백그라운드 작업
 # 알림을 내면서 `"<작업 이름> failed"`(agent_completed)까지 '결재 필요'로 올라갔다. 아무도
-# 기다리지 않는 빨간 결재가 며칠씩 남았다(2026-09-01 DGagent 실사고: "채널소개 영상 PiP
+# 기다리지 않는 빨간 결재가 며칠씩 남았다(2026-09-01 실사고: "채널소개 영상 PiP
 # 파이프라인 렌더링 및 검증 failed" 가 결재 1건으로 붙박이). 진짜 결재는 '사람이 답해야
 # 클로드가 한 발짝이라도 나가는 것'뿐이다.
 DECISION_NOTIFICATIONS = {"permission_prompt", "worker_permission_prompt", "agent_needs_input"}
@@ -205,7 +205,7 @@ def main() -> None:
         "machine": socket.gethostname(),
         # 이 클로드가 tmux 안에서 도는가 — TMUX 환경변수는 tmux 안에서 시작된 프로세스에만 있고,
         # 훅은 클로드의 자식이라 그대로 물려받는다. 프로그터미널의 세션 = tmux 세션이므로,
-        # 브릿지는 이 값으로 "프로그터미널이 연 세션의 결재만" 올린다(Zed·iTerm 세션 제외 — 대표 지시).
+        # 브릿지는 이 값으로 "프로그터미널이 연 세션의 결재만" 올린다(Zed·iTerm 세션 제외).
         "inTmux": bool(os.environ.get("TMUX")),
         "updatedAt": datetime.now(KST).isoformat(),
     }

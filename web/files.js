@@ -33,7 +33,7 @@ function extOf(name) {
   return /^[a-z0-9]{1,8}$/.test(ext) ? ext : "none";
 }
 
-const FILE_ERRORS = {                         // 서버 응답 코드 → 대표가 읽을 말
+const FILE_ERRORS = {                         // 서버 응답 코드 → 사용자가 읽을 말
   404: "없거나 볼 수 없는 파일입니다",
   413: "너무 커서 열 수 없습니다 (2MB 넘음)",
   415: "글자 파일이 아니라 열 수 없습니다",
@@ -120,7 +120,7 @@ function fpOpenFromTerminal(path) {
   });
 }
 
-// 터미널을 열 때마다 app.js(openTerminal)가 부른다 — 파일 패널은 '열림'이 기본값(대표 지시).
+// 터미널을 열 때마다 app.js(openTerminal)가 부른다 — 파일 패널은 '열림'이 기본값.
 // 폰은 패널이 화면을 통째로 덮어 터미널이 안 보이므로 자동으로는 열지 않는다(📁 로만).
 function fpAutoOpen() {
   if (!fpPanel().hidden || !currentSession) return;   // 이미 열려 있으면 fpSync 가 프로젝트를 맞춘다
@@ -246,7 +246,7 @@ function fpRow(node, depth) {
   li.onclick = () => (node.dir ? fpToggle(node) : fpGo(() => fpOpen(node.path)));
   // 우클릭 = 프로그램으로 열기(맥에서) — PDF·HTML·큰 이미지·SVG·HEIC에도 남겨 둔 길
   li.addEventListener("contextmenu", e => fpShowMenu(e, node));
-  // 트리 → 터미널 드래그 = 그 경로를 입력(VS Code·Zed 와 같은 동작 — 대표 지시).
+  // 트리 → 터미널 드래그 = 그 경로를 입력(VS Code·Zed 와 같은 동작).
   // 절대경로는 세션의 path 로 만든다(사용자별 루트를 코드에 박지 않는다). 받는 쪽은 app.js drop.
   li.draggable = true;
   li.addEventListener("dragstart", e => {
@@ -261,7 +261,7 @@ function fpRow(node, depth) {
 }
 
 function fpToggle(node) {
-  // 폴더로 나가면 열어 둔 파일은 닫는다(대표 지시 — "계속 열려 있다") — 단 저장 안 한 수정은
+  // 폴더로 나가면 열어 둔 파일은 닫는다(안 그러면 계속 열려 있다) — 단 저장 안 한 수정은
   // 말없이 버리지 않는다: 편집 중이면 그대로 두고, ✕ 닫기·크럼이 fpGo 를 거쳐 닫는 길이 된다.
   if (fp.file && !fpDirty()) fpCloseFile();
   node.open = !node.open;
@@ -296,8 +296,8 @@ async function fpFetchDir(node) {
 }
 
 // ---------- 주기 갱신 — 터미널에서 생긴 폴더·파일이 저절로 나타난다 ----------
-// children 은 '한 번 받으면 다시 안 받는' 캐시라 트리가 첫 읽기 그대로 멈춰 있었다(대표 지적:
-// 폴더가 생겼는데 실시간으로 안 보인다). app.js 의 7초 폴링이 이걸 부른다 — 펼쳐 둔 폴더만
+// children 은 '한 번 받으면 다시 안 받는' 캐시라 트리가 첫 읽기 그대로 멈춰 있었다(폴더가
+// 생겨도 실시간으로 안 보였다). app.js 의 7초 폴링이 이걸 부른다 — 펼쳐 둔 폴더만
 // 다시 읽고, 같은 이름의 노드는 객체를 이어받아 펼침·받아 둔 자식을 잃지 않는다. 서버 push(감시)는
 // 브릿지 수정이 필요하고 이득이 작다 — 펼친 폴더 몇 개의 작은 JSON 이면 충분하다.
 let fpRefreshing = false;
@@ -379,7 +379,7 @@ async function fpOpen(path, note = "") {
   const edit = el("button", "✏️ 편집");
   edit.id = "fp-edit";
   edit.onclick = () => fpEditMode(got.content);
-  const close = el("button", "✕ 닫기");      // 보던 파일을 손으로 닫는 길(대표 지시)
+  const close = el("button", "✕ 닫기");      // 보던 파일을 손으로 닫는 길
   close.id = "fp-view-close";
   close.onclick = fpCloseFile;
   const pre = document.createElement("pre");
@@ -512,8 +512,8 @@ async function fpSave(ta, btn) {
   btn.disabled = false;
   if (res.status === 409) {
     // 열어본 뒤 다른 곳(클로드·에디터)에서 그 파일이 먼저 바뀌었다. 여기서 화면을 갈아치우면
-    // 대표가 방금 쓴 글이 사라진다 → 고친 내용은 textarea 에 그대로 두어 읽고 복사할 수 있게 하고,
-    // 덮어쓸지 말지는 대표가 고르게 한다(덮어쓰면 상대 수정은 사라진다 — 버튼에 그대로 적는다).
+    // 사용자가 방금 쓴 글이 사라진다 → 고친 내용은 textarea 에 그대로 두어 읽고 복사할 수 있게 하고,
+    // 덮어쓸지 말지는 사용자가 고르게 한다(덮어쓰면 상대 수정은 사라진다 — 버튼에 그대로 적는다).
     fpNote("⚠️ 다른 곳에서 이 파일이 먼저 바뀌었습니다 — 아래 내 수정은 그대로 있습니다",
            { label: "덮어쓰기 (상대 수정은 사라집니다)", onClick: () => fpOverwrite(ta, btn) });
     return;
@@ -671,7 +671,7 @@ async function fpOpenWith(node, app) {
       body: JSON.stringify({ project: fp.project, path: node.path, app }),
     });
     if (!res.ok) fpNote(`맥에서 열지 못했습니다 (서버 응답 ${res.status})`);
-    // 성공 안내는 따로 없다 — 맥 화면에 앱이 뜨는 것이 피드백이다(폰 사용은 범위 밖, 대표 확인)
+    // 성공 안내는 따로 없다 — 맥 화면에 앱이 뜨는 것이 피드백이다(폰 사용은 범위 밖)
   } catch {
     fpNote("맥에 연결되지 않아 열지 못했습니다 — Tailscale 연결을 확인하세요");
   }

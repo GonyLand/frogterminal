@@ -1,12 +1,12 @@
 "use strict";
 // 멀티 칸 격자 — 상단 [1][4][6][8], 칸 머리줄의 프로젝트 고르기, 활성 칸 전환, 배치 기억
-// (대표 지시 2026-10-04 · 설계 docs/superpowers/specs/2026-10-09-multipane-grid-design.md).
+// (설계 docs/superpowers/specs/2026-10-09-multipane-grid-design.md).
 // 칸 하나의 터미널 동작은 pane.js, 화면 공통부(위 머리줄·탭 바·파일/브라우저 패널)는 app.js 가 맡는다.
 // 데스크톱 전용 — 폰은 한 화면씩 갈아끼우는 배치라 늘 1칸이다.
 
 const GRID_KEY = "frog.grid";
 const GRID_SIZES = [1, 4, 6, 8];
-const GRID_DEFAULT = 4;                       // 기억값이 없으면 4칸(대표 지시: "기본은 4개")
+const GRID_DEFAULT = 4;                       // 기억값이 없으면 4칸
 
 // 이 기기에 남긴 배치 — {n: 고른 칸 수, names: 칸별 세션 이름}. 기기별이라 폰·다른 맥은 따라오지 않는다.
 function gridLoad() {
@@ -18,7 +18,7 @@ function gridLoad() {
   return { n: GRID_DEFAULT, names: [] };
 }
 
-let gridChoice = gridLoad().n;                // 대표가 고른 칸 수 — 폰 폭에서 1칸으로 접혀도 이 값은 남는다
+let gridChoice = gridLoad().n;                // 사용자가 고른 칸 수 — 폰 폭에서 1칸으로 접혀도 이 값은 남는다
 
 function gridSave() {
   if (!isDesktop()) return;                   // 폰의 강제 1칸이 데스크톱 배치를 덮지 않게
@@ -44,7 +44,7 @@ function gridSession(name) {
 // ---------- 칸 수 바꾸기 ----------
 // names — 칸 자리별로 먼저 앉힐 세션 이름(이 기기 기억). 나머지 빈 칸은 사이드바 순서의 켜진 세션.
 // 꺼진 프로젝트는 저절로 켜지 않는다 — 칸 수 하나 고를 때 에이전트가 여럿 동시에 뜨면 안 된다.
-// save=false — 폰 폭 진입처럼 화면이 강제로 바꾼 것. 대표가 고른 칸 수(gridChoice)는 그대로 둔다.
+// save=false — 폰 폭 진입처럼 화면이 강제로 바꾼 것. 사용자가 고른 칸 수(gridChoice)는 그대로 둔다.
 function setGrid(n, names = [], save = true) {
   if (!GRID_SIZES.includes(n)) return;
   if (save) gridChoice = n;
@@ -139,7 +139,7 @@ function attachHead(pane) {
   // pointerdown(캡처)이라 xterm 이 포커스를 가져가기 전에, 패널들의 click 동기화(fpSync·bpSync)보다 먼저 선다.
   pane.root.addEventListener("pointerdown", () => setActive(pane), true);
   pane.host.addEventListener("focusin", () => setActive(pane));
-  // 더블클릭 = 그 칸 크게 보기 / 다시 더블클릭 = 원래 격자로 (대표 지시 2026-10-11). 여러 칸일 때만 —
+  // 더블클릭 = 그 칸 크게 보기 / 다시 더블클릭 = 원래 격자로. 여러 칸일 때만 —
   // 1칸에서는 지금처럼 tmux 의 단어 선택으로 간다. 두 번째 누름(detail 2)을 캡처 단계에서 끊어 xterm·tmux 에
   // 안 보낸다: 그대로 두면 tmux 가 단어를 골라 복사 모드에 들어가 다음 타이핑이 화면 안을 돌아다닌다.
   pane.root.addEventListener("mousedown", e => {
@@ -227,7 +227,7 @@ function renderPicks(force = false) {
   }
 }
 
-// ---------- 하단 공통 HUD — 여러 칸일 때만 (대표 지시 2026-10-11) ----------
+// ---------- 하단 공통 HUD — 여러 칸일 때만 ----------
 // 칸마다 반복되던 계정 사용량 줄(digi·ceo·cdx·anti)을 상태바 위에 한 세트만 띄운다. 내용은 브릿지가
 // 같은 statusline.py 를 --accounts 로 돌린 것(ANSI 색 포함) — 클로드 안의 HUD 와 글자까지 같다.
 // 1칸은 클로드 HUD 가 원래대로 다 보이므로 여기는 접는다(같은 줄이 두 번 보이지 않게).

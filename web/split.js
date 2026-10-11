@@ -1,6 +1,6 @@
 "use strict";
-// 3열 분할선 — 사이드바↔가운데, 가운데↔파일패널의 폭을 잡아끌어 바꾼다(대표 지적: "좌우 여백
-// 조정이 안 된다"). 마우스·손가락 둘 다 같은 길로 처리한다(포인터 이벤트, CSS 에 touch-action:none).
+// 3열 분할선 — 사이드바↔가운데, 가운데↔파일패널의 폭을 잡아끌어 바꾼다(좌우 여백을
+// 조정할 수 있게). 마우스·손가락 둘 다 같은 길로 처리한다(포인터 이벤트, CSS 에 touch-action:none).
 //
 // 폰(<900px)에서는 CSS 가 분할선을 숨기고 한 화면씩 갈아끼운다. 그런데 인라인 style.width 는
 // 미디어쿼리의 width:100% 를 이기므로, 폰 폭에서는 반드시 지워야 배치가 안 깨진다(applySizes).
@@ -37,7 +37,7 @@ function splitSaved(key) {
 }
 
 // 저장해 둔 폭을 다시 건다. 창 크기가 바뀌면 상·하한이 달라지므로 그때마다 다시 계산한다.
-// 대표가 한 번도 끌지 않았으면(저장값 없음) 아무것도 걸지 않는다 — CSS 기본값(250px·320px)과
+// 사용자가 한 번도 끌지 않았으면(저장값 없음) 아무것도 걸지 않는다 — CSS 기본값(250px·320px)과
 // 파일을 열 때 넓어지는 .wide(55%)가 그대로 산다.
 function applySizes() {
   for (const key of Object.keys(SPLIT_PANE)) {
@@ -96,7 +96,7 @@ const syncFileSplitter = syncSplitters;
 for (const key of ["file", "browser"])
   new MutationObserver(syncSplitters).observe(splitPane(key), { attributes: true, attributeFilter: ["hidden"] });
 
-// 파일을 열면 files.js 가 .wide(55%)를 건다. 대표가 직접 끈 폭은 인라인 style 이라 그 규칙을
+// 파일을 열면 files.js 가 .wide(55%)를 건다. 사용자가 직접 끈 폭은 인라인 style 이라 그 규칙을
 // 이기는데, 그게 맞다 — "폭 조절이 안 된다"가 이 작업의 출발점이라, 한 번 정한 폭을 화면이
 // 제멋대로 되돌리면 고친 뜻이 없다. 손대기 전에는 인라인 폭 자체가 없어 .wide 가 그대로 산다.
 syncFileSplitter();
@@ -104,7 +104,7 @@ applySizes();
 addEventListener("resize", applySizes);        // 창이 좁아지면 상한이 줄어든다 — 다시 자른다
 matchMedia("(min-width: 900px)").addEventListener("change", applySizes);   // 폰↔데스크톱 경계
 
-// ---------- 사이드바 접기 — 터미널 헤더의 « » (대표 지시: 슬라이드로 숨김) ----------
+// ---------- 사이드바 접기 — 터미널 헤더의 « » (슬라이드로 숨김) ----------
 // 폭 자체(SPLIT_KEY.list)는 건드리지 않는다 — 접었다 펴면 끌어 둔 폭 그대로 돌아온다.
 // 기억은 기기별(localStorage) — 맥에서 접었다고 폰·다른 맥이 따라 접히면 당황스럽다.
 const SIDE_KEY = "frog.side.collapsed";

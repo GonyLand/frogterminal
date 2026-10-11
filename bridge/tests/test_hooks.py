@@ -107,7 +107,7 @@ def test_notification_권한은_permission_카드(tmp_path):
     assert c["sessionId"] == "s1" and c["machine"] and c["updatedAt"]
 
 
-# ── 어떤 알림이 '결재'인가 (2026-09-01 DGagent 붙박이 결재 사고) ──────────────
+# ── 어떤 알림이 '결재'인가 (2026-09-01 붙박이 결재 사고) ──────────────
 # 클로드 코드의 알림 종류는 실측으로 확인한 것들이다(2.1.252 바이너리):
 #   permission_prompt · worker_permission_prompt · agent_needs_input · idle_prompt
 #   agent_completed · auth_success · push_notification · computer_use_* · elicitation_*
@@ -125,7 +125,7 @@ def test_백그라운드_작업_알림은_결재가_아니다():
     """★ 실사고 재현 — 'PiP 렌더링 및 검증 failed'(agent_completed)가 결재 1건으로 며칠 남았다.
 
     클로드 코드는 `${작업이름} ${실패면 failed 아니면 finished}` 로 이 알림을 만든다(바이너리 실측).
-    작업 이름은 대표가 지은 한글이라, 문구로는 결재와 구분할 단서가 전혀 없다 — 종류로 갈라야 한다.
+    작업 이름은 사용자가 지은 한글이라, 문구로는 결재와 구분할 단서가 전혀 없다 — 종류로 갈라야 한다.
     """
     kind = frog_hook.notification_kind
     assert kind("agent_completed", "채널소개 영상 PiP 파이프라인 렌더링 및 검증 failed") == "idle"

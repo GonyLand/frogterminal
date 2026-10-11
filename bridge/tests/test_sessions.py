@@ -67,8 +67,8 @@ def test_git_저장소면_마커가_없어도_프로젝트(tmp_path, monkeypatch
 
 
 def test_새_프로젝트_버튼으로_만든_빈_폴더는_프로젝트다(tmp_path, monkeypatch):
-    """2026-08-22 대표 실사고 — [+ 새 프로젝트] 로 'demo' 를 만들고 다른 세션에 갔다 오니
-    사라졌다. 빈 폴더라 .git 도 마커도 없어 '프로젝트 아님'으로 접힌 것. 대표가 만들겠다고
+    """2026-08-22 실사고 — [+ 새 프로젝트] 로 'demo' 를 만들고 다른 세션에 갔다 오니
+    사라졌다. 빈 폴더라 .git 도 마커도 없어 '프로젝트 아님'으로 접힌 것. 사용자가 만들겠다고
     한 것은 그 자체로 프로젝트다 — 명단(created.json)에 있으면 내용과 무관하게 보여야 한다.
     """
     root = make_root(tmp_path)
@@ -177,7 +177,7 @@ def test_is_valid_name_평범한_이름은_통과():
 
 def test_is_valid_name_한글_이름도_통과():
     """★ 이 맥의 프로젝트 폴더에는 한글 이름이 실재한다 — 영문만 허용하던 옛 규칙이
-    '보고서양식-시안' 의 숨기기(400)·터미널 열기(404)를 전부 막았다(2026-08-15 대표 실측)."""
+    '보고서양식-시안' 의 숨기기(400)·터미널 열기(404)를 전부 막았다(2026-08-15 실측)."""
     assert sessions.is_valid_name("보고서양식-시안") is True
     assert sessions.is_valid_name("한글_프로젝트.v2") is True
     assert sessions.is_valid_name("한글 공백") is False            # 공백·경로문자는 여전히 막는다
@@ -186,7 +186,7 @@ def test_is_valid_name_한글_이름도_통과():
 # ── 세션 끄기 ────────────────────────────────────────────────────────────────
 
 def test_kill_session_지목한_이름_하나만_끈다(monkeypatch):
-    """'다른 세션은 죽이지 않는다' 원칙의 예외는 여기 하나뿐 — 대표가 콕 집은 그 세션.
+    """'다른 세션은 죽이지 않는다' 원칙의 예외는 여기 하나뿐 — 사용자가 콕 집은 그 세션.
 
     kill-server(전체 몰살)나 이름 없는 kill 이 새어 들어가면 다른 프로젝트가 통째로 날아간다.
     """
@@ -203,7 +203,7 @@ def test_kill_session_지목한_이름_하나만_끈다(monkeypatch):
 
 
 def test_kill_session_이미_꺼졌으면_멱등하게_False(monkeypatch):
-    """대표가 두 번 눌러도 에러가 아니라 '이미 꺼져 있었다'로 조용히 닫는다."""
+    """사용자가 두 번 눌러도 에러가 아니라 '이미 꺼져 있었다'로 조용히 닫는다."""
     monkeypatch.setattr(sessions, "list_tmux_sessions", lambda: [])
     monkeypatch.setattr(sessions, "_kill_tmux",
                         lambda n: pytest.fail("죽은 세션에 tmux 를 부르면 안 된다"))
@@ -282,7 +282,7 @@ def test_merged_sessions_숨김은_표시만_하고_목록에서_빼지_않는�
 
 
 # ── 프로젝트 즐겨찾기 ────────────────────────────────────────────────────────
-# 숨김과 같은 자리(서버 파일)에 두되 set 이 아니라 list 다 — 대표가 올린 '순서'가 곧 맨 위 순서다.
+# 숨김과 같은 자리(서버 파일)에 두되 set 이 아니라 list 다 — 사용자가 올린 '순서'가 곧 맨 위 순서다.
 
 @pytest.fixture
 def fav_file(tmp_path, monkeypatch):
@@ -303,7 +303,7 @@ def test_favorites_누른_순서가_그대로_남는다(fav_file):
 
 
 def test_favorites_이미_있는_이름은_자리를_옮기지_않는다(fav_file):
-    """7초 폴링이 다시 그릴 때마다 줄이 뛰면 대표가 누르려던 줄을 놓친다."""
+    """7초 폴링이 다시 그릴 때마다 줄이 뛰면 사용자가 누르려던 줄을 놓친다."""
     sessions.set_favorite("hotel", True)
     sessions.set_favorite("alpha", True)
     assert sessions.set_favorite("hotel", True) == ["hotel", "alpha"]
@@ -440,7 +440,7 @@ def test_copy_buffer_는_버퍼가_없거나_실패해도_빈_문자열(monkeypa
 def test_session_agents_는_pane_명령이_codex_인_세션만(monkeypatch):
     class Out:
         returncode = 0
-        stdout = "kakao\tcodex\nDGagent\t2.1.261\ndev\tzsh\nfrogterminal\tcodex\n"
+        stdout = "kakao\tcodex\nother\t2.1.261\ndev\tzsh\nfrogterminal\tcodex\n"
     monkeypatch.setattr(sessions.subprocess, "run", lambda *a, **k: Out())
     assert sessions.session_agents() == {"kakao": "codex", "frogterminal": "codex"}
 

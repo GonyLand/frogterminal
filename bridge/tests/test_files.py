@@ -197,7 +197,7 @@ def test_read_image_는_이미지_전용_상한을_지킨다(proj, monkeypatch):
         files.read_image("alpha", "img.png")
 
 
-CP949_CSV = "이름,금액\n김대표,1000\n".encode("cp949")   # 한국 엑셀·옛 .txt 가 쓰는 인코딩
+CP949_CSV = "이름,금액\n김철수,1000\n".encode("cp949")   # 한국 엑셀·옛 .txt 가 쓰는 인코딩
 
 
 def test_비UTF8_파일은_열리지_않는다(proj):
@@ -223,7 +223,7 @@ def test_8KB_뒤에_숨은_비UTF8_바이트도_잡는다(proj):
 
 def test_감사로그_이름은_어디서도_안_열린다(proj):
     """_uploads 차단(sessions)에 더한 이중 방어 — 감사로그가 어디에 있든 이름으로 막는다."""
-    (proj / "frogterminal-audit.log").write_text("2026-08-05T00:00:00+09:00 attach user=대표\n")
+    (proj / "frogterminal-audit.log").write_text("2026-08-05T00:00:00+09:00 attach user=사용자\n")
     with pytest.raises(files.NotAllowed):
         files.read_text("alpha", "frogterminal-audit.log")
     assert "frogterminal-audit.log" not in [e["name"] for e in files.list_dir("alpha")]
@@ -311,7 +311,7 @@ def test_앞뒤_공백_붙은_이름도_차단(proj, name):
     assert name not in [e["name"] for e in files.list_dir("alpha")]
 
 
-# ---------- '맥에서 열기' 절대경로 판정 (2026-08-15 대표 지시: 어디 있든 열리게) ----------
+# ---------- '맥에서 열기' 절대경로 판정 (어디 있든 열리게) ----------
 # ★의도된 예외다: 이 화면은 터미널이라 `open <경로>` 를 직접 칠 수 있어 폴더 제한이 방어가
 #   아니라 불편만 된다. 대신 '읽어서 브라우저로 보내는' API 의 제한은 그대로 살아 있어야 한다 —
 #   그 계약은 아래 test_열기_허용이_읽기_제한을_풀지_않는다 가 지킨다.

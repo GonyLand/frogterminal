@@ -1,5 +1,5 @@
-"""멀티 칸(4·6·8분할) 회귀 — 대표 지시: "4개를 띄우건 6개를 띄우건 각 입력창에 지금처럼 입력되고
-붙여넣기 잘되는 건 그대로 유지해야 된다. 지금 기능을 깨뜨리면 안 된다."
+"""멀티 칸(4·6·8분할) 회귀 — 4칸이든 6칸이든 각 입력창에 지금처럼 입력되고
+붙여넣기가 잘되는 것은 그대로 유지해야 한다. 지금 기능을 깨뜨리면 안 된다.
 
 그래서 여기서 지키는 것은 '칸이 여럿이어도 입력이 제 세션으로만 간다'가 핵심이다:
 타이핑·한글·붙여넣기(업로드 경로)·파일 끌어넣기가 각각 활성 칸·떨어뜨린 칸의 세션에만 닿고 옆 칸에는
@@ -60,7 +60,7 @@ def grid(bridge):
 
 
 def click_pane(page, i):
-    """칸 i 의 터미널 한가운데를 누른다 — 대표가 실제로 하는 것(그 칸이 활성이 되고 키보드가 간다)."""
+    """칸 i 의 터미널 한가운데를 누른다 — 사용자가 실제로 하는 것(그 칸이 활성이 되고 키보드가 간다)."""
     page.locator(".pane").nth(i).locator(".xterm-screen").click()
     page.wait_for_timeout(150)
 
@@ -226,7 +226,7 @@ def test_설정의_글자_크기는_모든_칸에_든다(grid, bridge):
 
 
 def test_1칸은_칸_머리줄이_없는_예전_화면이고_패널_머리줄은_산다(grid, bridge):
-    """1칸은 지금까지와 똑같아야 한다(대표 지시). 칸 머리줄 이름이 오른쪽 패널 머리줄(.pane-head)과
+    """1칸은 지금까지와 똑같아야 한다. 칸 머리줄 이름이 오른쪽 패널 머리줄(.pane-head)과
     겹쳐 1칸에서도 콤보가 보였던 실수(2026-10-11 실화면 검수에서 발견)를 막는다."""
     assert grid.locator(".cell-head").nth(0).is_visible()          # 여러 칸 — 보인다
     click_pane(grid, 1)
@@ -299,7 +299,7 @@ def test_여러_칸이면_결재_대시보드는_접히고_1칸이면_원래대�
     assert grid.evaluate("localStorage.getItem('frog.dash.open')") is None
 
 
-# ---------- HUD — 칸 안은 짧게, 계정 줄은 하단 한 세트 (대표 지시 2026-10-11) ----------
+# ---------- HUD — 칸 안은 짧게, 계정 줄은 하단 한 세트 ----------
 
 def compact_msgs(bridge):
     import json
@@ -315,7 +315,7 @@ def test_여러_칸이면_칸마다_HUD를_짧게_하라고_알리고_하단에_
     assert "<img" in grid.text_content("#hud")
     box = grid.locator("#hud").bounding_box()
     assert box["height"] < 60                             # 4줄이 두 단 = 두 줄 높이
-    # 사이드바 밑까지 퍼지지 않고 칸들의 왼쪽 선에서 시작한다(대표 지적 2026-10-11)
+    # 사이드바 밑까지 퍼지지 않고 칸들의 왼쪽 선에서 시작한다
     assert abs(box["x"] - grid.locator("#panes").bounding_box()["x"]) < 2
     # 두 열은 표처럼 붙어 있다 — 둘째 열이 화면 가운데까지 밀려나지 않는다
     first, second = (grid.locator("#hud .hud-line").nth(i).bounding_box() for i in (0, 1))
@@ -333,7 +333,7 @@ def test_1칸으로_돌아오면_HUD를_원래대로_하라고_알리고_하단_
     assert not grid.is_visible("#hud")
 
 
-# ---------- 더블클릭 크게 보기 (대표 지시 2026-10-11) ----------
+# ---------- 더블클릭 크게 보기 ----------
 PRESS = re.compile(rb"\x1b\[<0;\d+;\d+M")              # 왼쪽 버튼 누름 리포트(tmux 로 가는 것)
 
 

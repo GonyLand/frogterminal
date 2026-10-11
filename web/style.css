@@ -210,7 +210,7 @@ button, .tree-row, #sessions li { transition: background .12s, border-color .12s
 .dash-card .dash-q { margin: 6px 0 8px; color: var(--t2); font-size: 14px; line-height: 1.5;
   white-space: pre-wrap; word-break: break-word; }
 .dash-opts { display: flex; flex-wrap: wrap; gap: 6px; }
-/* 선택지 — 폰에서 손가락으로 누를 크기(44px). 이것이 대표가 말한 '피커'다. */
+/* 선택지 — 폰에서 손가락으로 누를 크기(44px). 이것이 선택 버튼 '피커'다. */
 .dash-opt { min-height: 44px; padding: 8px 14px; background: var(--raise); color: var(--t1);
   border: 1px solid var(--line-2); border-radius: 6px; font-size: 14px; text-align: left; }
 .dash-opt:hover { border-color: var(--green); }
@@ -232,7 +232,7 @@ button, .tree-row, #sessions li { transition: background .12s, border-color .12s
 
 /* ---------- 하단 상태바 (데스크톱) — Orca 차용 ---------- */
 /* 공통 HUD(grid.js) — 여러 칸일 때만. 칸마다 반복되던 계정 사용량 줄을 터미널 영역 맨 아래 한 세트로.
-   두 열은 표처럼 내용 폭만큼만(max-content) — 화면 반씩 나누면 둘째 열이 멀리 떨어져 안 읽힌다(대표 지적) */
+   두 열은 표처럼 내용 폭만큼만(max-content) — 화면 반씩 나누면 둘째 열이 멀리 떨어져 안 읽힌다 */
 #hud { display: grid; grid-template-columns: max-content max-content; justify-content: start; column-gap: 28px;
   padding: 4px 6px; background: var(--deep); border-top: 1px solid var(--line); flex-shrink: 0; overflow: hidden;
   font-family: var(--mono); font-size: 13px; line-height: 1.45; color: var(--t2); }
@@ -329,7 +329,7 @@ button, .tree-row, #sessions li { transition: background .12s, border-color .12s
 /* 이름은 글자 폭만큼만 — 칸 전체로 늘리면 '이름 클릭'의 중심이 오른쪽 액션 버튼까지 밀린다(실측) */
 #sessions li b { font-size: 14px; font-weight: 700; color: var(--t1);
   justify-self: start; max-width: 100%; min-width: 0; }
-/* 즐겨찾기 표식 — 대표가 맨 위로 올려 둔 줄. 상태 점(왼쪽)과 자리가 달라 서로를 흐리지 않는다 */
+/* 즐겨찾기 표식 — 사용자가 맨 위로 올려 둔 줄. 상태 점(왼쪽)과 자리가 달라 서로를 흐리지 않는다 */
 #sessions li .row-name i { flex-shrink: 0; font-style: normal; font-size: 11px;
   line-height: 1; color: var(--amber); }
 #sessions li em { grid-column: 1; grid-row: 1; font-style: normal; font-size: 10px;
@@ -349,7 +349,7 @@ button, .tree-row, #sessions li { transition: background .12s, border-color .12s
   animation: frog-pulse 1.6s ease-in-out infinite; }
 #sessions li:has(.st.working) em { animation: frog-pulse 2.4s ease-in-out infinite; }
 /* 줄 오른쪽 액션(즐겨찾기·끄기·숨기기) — 오른쪽 끝에 작은 아이콘 세로 스택, 손이 닿을 때만 보인다.
-   글자 버튼('끄기')이 커서 자꾸 잘못 눌렸다(대표 지적) — 폭을 아이콘 하나 크기로 줄여
+   글자 버튼('끄기')이 커서 자꾸 잘못 눌렸다 — 폭을 아이콘 하나 크기로 줄여
    이름 클릭 경로에서 치운다. 한 줄짜리 얇은 행에서는 위아래로 몇 px 겹치는데, 호버 때만
    뜨는 불투명 오버레이(z-index)라 실사용에 문제없다.
    버튼 배경은 불투명(raise) — 긴 이름 위에 떠도 글자가 겹쳐 보이지 않는다. */
@@ -360,7 +360,7 @@ button, .tree-row, #sessions li { transition: background .12s, border-color .12s
 #sessions li:hover .row-acts, #sessions li:focus-within .row-acts { display: flex; }
 /* 되묻기가 떠 있는 동안에는 아이콘 스택을 치운다 — 확인 상자가 붙으면 줄이 세로로 커지는데
    스택은 absolute + top:50% 중앙 정렬 + 불투명 배경이라 "…같이 종료됩니다" 문구와 [끄기]
-   버튼 위에 그대로 겹쳐 앉는다(대표 스크린샷). 폰(늘 보이게)에서도 같이 가려져야 하므로
+   버튼 위에 그대로 겹쳐 앉는다. 폰(늘 보이게)에서도 같이 가려져야 하므로
    미디어쿼리보다 센 선택자로 못박는다 — 순서가 아니라 특정도로 이긴다. */
 #sessions li:has(.row-confirm) .row-acts { display: none; }
 .row-acts button { min-width: 30px; min-height: 21px; padding: 1px 6px; background: var(--raise);
@@ -390,7 +390,7 @@ button, .tree-row, #sessions li { transition: background .12s, border-color .12s
 #term-view { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--void); }
 
 /* ---------- 결재 인박스 — 오른쪽 팝업 패널 (설정과 같은 문법) ---------- */
-/* 화면 교대가 아니다(대표 지시 — 터미널 전체를 가리지 않는다). ✕·결재 버튼 토글·Esc 로 닫는다. */
+/* 화면 교대가 아니다(터미널 전체를 가리지 않는다). ✕·결재 버튼 토글·Esc 로 닫는다. */
 #inbox-view { position: fixed; top: 52px; right: 12px; bottom: 36px;
   width: min(640px, calc(100vw - 24px)); display: flex; flex-direction: column;
   background: var(--deep); border: 1px solid var(--line-2); border-radius: 8px;
@@ -414,7 +414,7 @@ button, .tree-row, #sessions li { transition: background .12s, border-color .12s
   font-size: 13px; color: var(--t3); }
 #term-tabs button { min-width: 38px; min-height: 36px; padding: 5px 12px; background: none;
   color: var(--t3); border: 1px solid var(--line-2); border-radius: 6px; font-size: 14px;
-  flex-shrink: 0; }                           /* 30px 는 눌리지 않았다(대표 지적) — 한 단 키운다 */
+  flex-shrink: 0; }                           /* 30px 는 눌리지 않았다 — 한 단 키운다 */
 #term-tabs button:hover { color: var(--t1); border-color: var(--green); }
 #term-tabs .tab.on { color: var(--t1); border-color: var(--green); font-weight: 700; }
 #term-tabs .tab-x { margin-left: 8px; padding: 4px 2px; color: var(--t3); font-size: 14px; }
@@ -524,7 +524,7 @@ button#fp-close:hover { color: var(--t1); }
 .inbox-card :disabled { opacity: 0.55; cursor: default; }
 
 /* ---------- 설정 — 오른쪽 팝업 패널 ---------- */
-/* 화면 교대가 아니라 떠 있는 패널이다(대표 지시): 뒤의 터미널이 보여야 테마·글자 변경이
+/* 화면 교대가 아니라 떠 있는 패널이다: 뒤의 터미널이 보여야 테마·글자 변경이
    누르는 즉시 눈으로 확인된다. 배경을 어둡게 깔지 않는 것도 그래서다(가리면 미리보기가 아니다). */
 #settings-view { position: fixed; top: 52px; right: 12px; bottom: 36px;
   width: min(420px, calc(100vw - 24px)); display: flex; flex-direction: column;
@@ -669,7 +669,7 @@ button#fp-close:hover { color: var(--t1); }
 /* 트리 — 폴더를 접었다 폈다 하며 제자리에서 깊이를 드러낸다.
    --depth 는 JS 가 줄마다 심는다(0=루트 바로 아래). 들여쓰기는 depth 로만 계산한다. */
 #fp-body ul { list-style: none; }
-/* 글꼴은 Zed 프로젝트 패널처럼 UI 산세리프(대표 지시) — 모노는 코드·경로 표기용으로만 남긴다 */
+/* 글꼴은 Zed 프로젝트 패널처럼 UI 산세리프 — 모노는 코드·경로 표기용으로만 남긴다 */
 .tree-row { display: flex; align-items: center; gap: 6px; min-height: 26px; padding: 3px 8px;
   padding-left: calc(8px + var(--depth, 0) * 14px);
   cursor: pointer; color: var(--t2); font-size: var(--fp-fs, 13px); border-radius: 4px; }
@@ -679,7 +679,7 @@ button#fp-close:hover { color: var(--t1); }
 .tree-row.dir .tree-name { font-weight: 600; color: var(--t1); }
 .tree-row[draggable="true"] { -webkit-user-drag: element; }
 
-/* ── 파일 아이콘 테마 (VS Code 아이콘 익스텐션 차용 — 대표 지시) ──
+/* ── 파일 아이콘 테마 (VS Code 아이콘 익스텐션 차용) ──
    전부 CSS 로 그린다: 폴더는 clip-path 실루엣, 파일은 확장자 2글자 배지(브랜드색).
    이미지·폰트 에셋 없음 = CSP·오프라인 걱정 없음. 모르는 확장자는 중립 점. */
 .tree-icon { flex-shrink: 0; width: 2.25em; text-align: center;
@@ -778,7 +778,7 @@ button#fp-close:hover { color: var(--t1); }
 }
 @media (min-width: 900px) {                         /* 데스크톱 — 3열 */
   #list-view { width: 250px; flex-shrink: 0; transition: width .2s ease; }
-  /* 사이드바 접기(대표 지시) — 폭을 0 으로 밀어 슬라이드로 사라진다. 인라인 폭(split.js)을
+  /* 사이드바 접기 — 폭을 0 으로 밀어 슬라이드로 사라진다. 인라인 폭(split.js)을
      이겨야 하므로 !important. 터미널이 없는 빈 화면(.idle)에서는 접지 않는다 — 목록마저
      사라지면 아무것도 없는 화면이 된다. 분할선도 같이 접는다(잡을 선만 남으면 헷갈린다). */
   #main.side-collapsed:not(.idle) #list-view { width: 0 !important; min-width: 0; padding: 0;

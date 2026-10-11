@@ -120,7 +120,7 @@ async def test_api_와_뷰어_소켓(aiohttp_client, sandbox, site):
 
 
 async def test_메모리_정책_유휴10분_종료와_상한(sandbox, monkeypatch):
-    """대표 지시(2026-09-20 확정): 보는 동안엔 안 끄고, 뷰어 없이 10분 넘으면 끈다. 상한 초과는 새로 열 때만 정리."""
+    """보는 동안엔 안 끄고, 뷰어 없이 10분 넘으면 끈다. 상한 초과는 새로 열 때만 정리."""
     stopped = []
     reg = {}
     # 진짜 stop_chrome 은 장부에서도 지운다 — 가짜도 그래야 '두 번 끄기'가 안 생긴다

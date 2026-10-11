@@ -84,16 +84,16 @@ def test_마지막_user_발화와_마지막_assistant_글을_뽑는다(transcrip
 
 
 def test_isSidechain_은_건너뛴다(transcripts):
-    """서브에이전트 대화 — 대표가 시킨 것이 아니다."""
+    """서브에이전트 대화 — 사용자가 시킨 것이 아니다."""
     transcripts("/Users/x/proj", "s1", [
-        line("user", "대표가 진짜 시킨 것"),
-        line("assistant", "대표에게 한 진짜 말"),
+        line("user", "사용자가 진짜 시킨 것"),
+        line("assistant", "사용자에게 한 진짜 말"),
         line("user", "서브에이전트에게 준 지시", isSidechain=True),
         line("assistant", "서브에이전트가 한 말", isSidechain=True),
     ])
     ctx = decisions.context_for(card())
-    assert ctx["asked"] == "대표가 진짜 시킨 것"
-    assert ctx["said"] == "대표에게 한 진짜 말"
+    assert ctx["asked"] == "사용자가 진짜 시킨 것"
+    assert ctx["said"] == "사용자에게 한 진짜 말"
 
 
 def test_슬래시명령_껍데기와_인터럽트_표식은_건너뛴다(transcripts):
@@ -333,8 +333,8 @@ def test_isMeta_주입턴은_건너뛴다(transcripts):
     assert decisions.context_for(card())["asked"] == "쇼츠 만들어줘"
 
 
-def test_대표가_붙인_이미지_질문은_살린다(transcripts):
-    """isMeta 가 아닌 '[Image #1] …' 는 대표가 이미지와 함께 친 진짜 질문이다."""
+def test_사용자가_붙인_이미지_질문은_살린다(transcripts):
+    """isMeta 가 아닌 '[Image #1] …' 는 사용자가 이미지와 함께 친 진짜 질문이다."""
     transcripts("/Users/x/proj", "s1", [
         line("user", [{"type": "text", "text": "[Image #1] 둘중에 무슨 키로 연결되어 있지?"},
                       {"type": "image", "source": {"type": "base64", "data": "..."}}]),

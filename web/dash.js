@@ -1,6 +1,6 @@
 "use strict";
 // 상단 결재 대시보드 — "지금 내가 결정해야 할 것"을 인박스까지 들어가지 않고 그 자리에서 고른다.
-// 대표 지적: "결정해야 될 게 있으면 피커 형태로 만들어 달라고 했는데 지금은 '결재 대기' 글자뿐이다."
+// 결정할 것이 있으면 '결재 대기' 글자만 띄우지 않고 선택 버튼(피커)으로 보여 준다.
 //
 // 인박스(inbox.js)와 나눠 쓰는 것: 카드 맥락(contextNodes)·잠금(sentAnswers·sendAnswer)·
 // 오류 문구(ANSWER_ERRORS)·10번 이상 규칙(oneKey·MANUAL_NOTE). 여기서 다시 만들지 않는다 —
@@ -8,7 +8,7 @@
 // 렌더는 전부 textContent/createElement (카드 글자는 터미널 화면·대화 원문이라 innerHTML 금지).
 
 const DASH_OPEN_KEY = "frog.dash.open";        // 접기/펴기 — 기기에 기억시킨다(폰에서 자리를 많이 먹는다)
-// 여러 칸(grid.js)일 때는 따로 기억하고 기본은 접힘 — 칸이 세로로 납작해지는 주범이었다(대표 지적 2026-10-11).
+// 여러 칸(grid.js)일 때는 따로 기억하고 기본은 접힘 — 칸이 세로로 납작해지는 주범이었다.
 // 1칸 기억(DASH_OPEN_KEY)은 건드리지 않는다: 1칸으로 돌아오면 원래 펴 둔 대로 돌아온다.
 const DASH_GRID_KEY = "frog.dash.open.grid";
 const dashKey = () => (typeof isGrid === "function" && isGrid() ? DASH_GRID_KEY : DASH_OPEN_KEY);
@@ -97,7 +97,7 @@ function dashCard(c) {
   const options = reachable ? (c.options ?? []) : [];
   const picks = options.filter(oneKey);
   const manual = options.filter(o => !oneKey(o));
-  if (picks.length) {                          // ★ 이 버튼들이 대표가 말한 '피커'다
+  if (picks.length) {                          // ★ 이 버튼들이 선택 버튼 '피커'다
     const opts = document.createElement("div");
     opts.className = "dash-opts";
     for (const o of picks) {
@@ -128,7 +128,7 @@ function dashCard(c) {
   return div;
 }
 
-// 선택지를 못 읽은 결재 카드(permission) = 대표가 답을 글로 직접 넣는 자리.
+// 선택지를 못 읽은 결재 카드(permission) = 사용자가 답을 글로 직접 넣는 자리.
 // (답을 못 넣는 카드는 이 줄 자체가 안 그려진다 — dashCard 의 reachable 분기.)
 function askRow(c, div, locked) {
   const ask = document.createElement("input");

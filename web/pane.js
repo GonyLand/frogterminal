@@ -37,13 +37,13 @@ class Pane {
     const term = this.term = new Terminal({ scrollback: 5000, ...termOptions() });
     this.fit = new FitAddon.FitAddon();
     term.loadAddon(this.fit);
-    // 링크는 Ctrl(⌘도 — OS 에서 두 키를 바꿔 쓰는 경우까지)+클릭으로만 연다(Zed·VS Code 방식,
-    // 대표 지시). 수정자 없는 클릭은 터미널 몫(tmux 마우스·커서)이라 실수로 안 열린다.
+    // 링크는 Ctrl(⌘도 — OS 에서 두 키를 바꿔 쓰는 경우까지)+클릭으로만 연다(Zed·VS Code 방식).
+    // 수정자 없는 클릭은 터미널 몫(tmux 마우스·커서)이라 실수로 안 열린다.
     // 폰은 수정키가 없다 — 탭 한 번으로 연다(터치 기기만. 마우스 기기는 지금처럼 수정키 필수).
     term.loadAddon(new WebLinksAddon.WebLinksAddon((e, uri) => {
       if (e.ctrlKey || e.metaKey || isTouchPointer()) window.open(reachableUrl(uri), "_blank", "noopener");
     }));
-    // 파일 경로도 같은 조작으로 — Ctrl/⌘+클릭하면 파일 패널에서 그 파일이 열린다(대표 지시).
+    // 파일 경로도 같은 조작으로 — Ctrl/⌘+클릭하면 파일 패널에서 그 파일이 열린다.
     term.registerLinkProvider({ provideLinks: (y, cb) => filePathLinks(this, y, cb) });
     term.open(this.host);
     this.connect(0);
@@ -60,7 +60,7 @@ class Pane {
         if (c >= 0x40 && c <= 0x5f) d = String.fromCharCode(c & 0x1f);
         setCtrl(false);
       }
-      // Ctrl+Z 는 일시중단(클로드가 멈추고 fg 로만 복구)이라 그대로 보내지 않는다. 대신 대표가
+      // Ctrl+Z 는 일시중단(클로드가 멈추고 fg 로만 복구)이라 그대로 보내지 않는다. 대신 사용자가
       // 기대하는 '실행 취소'로 옮긴다 — 클로드 코드도 zsh 도 실행취소가 Ctrl+_(0x1f)다(실측).
       if (d === "\x1a") { this.send("\x1f"); return; }
       // Ctrl+D(EOF)는 세션을 통째로 닫는다 — 오타 한 번에 날아가지 않게 잠근다(끄기는 사이드바 🗑).
@@ -73,7 +73,7 @@ class Pane {
       if (this.send(d)) consumeCommittedIME?.(d);  // 비안드로이드 blur 보관분에서 실제 전송 접두부를 차감한다
     });
     // 휠로 위를 보거나 드래그하면 tmux 가 복사 모드에 들어가고, 그 뒤 타이핑은 클로드가 아니라
-    // 화면 안을 돌아다닌다(Esc 로 나와야 했다 — 대표 지적 2026-09-09). "스크롤은 조회, 커서는
+    // 화면 안을 돌아다닌다(Esc 로 나와야 했다). "스크롤은 조회, 커서는
     // 입력창"이 맞는 그림이므로 스크롤·드래그가 있었으면 다음 첫 키 앞에 unmode 를 먼저 보낸다.
     // 판단은 tmux 가 한다(모드 밖이면 아무 일도 없다) — 여기서는 '있었다'는 표시만 세운다.
     term.element.addEventListener("wheel", () => { this.scrolledSinceKey = true; }, { passive: true });
@@ -82,17 +82,17 @@ class Pane {
     // term.element 는 dispose 때 DOM 에서 통째로 제거되므로 이 핸들러들도 같이 사라진다
     term.element.addEventListener("touchstart", e => this.onTouchStart(e), { passive: true });
     term.element.addEventListener("touchmove", e => this.onTouchMove(e), { passive: false });
-    // 우클릭 — 브라우저 메뉴와 tmux 메뉴(Kill·Respawn 같은 위험 항목 포함)가 겹쳐 떴다(대표
-    // 스크린샷 2026-08-15). 둘 다 막는다: 브라우저 메뉴는 contextmenu 에서, tmux 메뉴는
+    // 우클릭 — 브라우저 메뉴와 tmux 메뉴(Kill·Respawn 같은 위험 항목 포함)가 겹쳐 떴다.
+    // 둘 다 막는다: 브라우저 메뉴는 contextmenu 에서, tmux 메뉴는
     // 우클릭이 xterm(마우스 리포트)에 아예 닿지 않게 캡처 단계에서 끊어서.
-    // 휠클릭(가운데)도 같이 끊는다 — 대표는 휠클릭이 화면 캡처라, 터미널 위에서 누르면 캡처와
+    // 휠클릭(가운데)도 같이 끊는다 — 휠클릭을 화면 캡처에 쓰는 환경에선, 터미널 위에서 누르면 캡처와
     // 동시에 tmux 의 가운데버튼 붙여넣기(옛 버퍼)가 끼어드는 사고가 났다. 휠 '스크롤'은 별개라 산다.
     term.element.addEventListener("contextmenu", e => termMenu(e, this));   // 브라우저·tmux 메뉴 대신 우리 메뉴
     for (const type of ["mousedown", "mouseup"])
       term.element.addEventListener(type, e => {
         if (e.button === 1 || e.button === 2) { e.preventDefault(); e.stopPropagation(); }
       }, true);
-    // ★드래그 복사를 '이 기기' 클립보드로 (대표 실사고 2026-08-15).
+    // ★드래그 복사를 '이 기기' 클립보드로.
     // tmux 가 mouse on 이라 드래그는 브라우저 선택이 아니라 tmux 선택이고, 이 맥의 tmux.conf 는
     // 결과를 pbcopy 로 보낸다 — 폰에서 드래그하면 복사물이 폰이 아니라 맥으로 가 붙여넣기가
     // 영영 안 됐다. 드래그가 끝나면 tmux 버퍼를 읽어 이 브라우저 클립보드에도 넣는다.
@@ -146,7 +146,7 @@ class Pane {
     const size = term ? `?cols=${term.cols}&rows=${term.rows}` : "";
     const agent = this.session.agent ? `${size ? "&" : "?"}agent=${this.session.agent}` : "";
     // 다시 붙기 표시 — 브릿지는 끄기 버튼으로 끈 세션이면 새로 켜지 않고 4410 으로 닫는다(server.py KILLED).
-    // 처음 여는 접속(대표가 고른 것)에는 안 붙인다 — 그건 꺼진 세션을 켜려는 뜻이다.
+    // 처음 여는 접속(사용자가 고른 것)에는 안 붙인다 — 그건 꺼진 세션을 켜려는 뜻이다.
     const re = this.everOpen ? `${size || agent ? "&" : "?"}re=1` : "";
     // 프로토콜은 페이지를 따른다 — 실사용(테일스케일 https)은 wss, 로컬 http 개발은 ws.
     // wss 고정이던 시절엔 http 로 열면 터미널만 말없이 죽었다.
@@ -160,7 +160,7 @@ class Pane {
     this.sentSize = term ? `${term.cols}x${term.rows}` : "";
     this.waitingFirstByte = true;
     clearTimeout(this.connectHintTimer);      // 붙는 데 오래 걸리면 '연결 중'을 눈에 보이게 알린다 —
-    this.connectHintTimer = setTimeout(() => {  // 옛 화면만 남아 멈춘 것처럼 보이던 것(대표 지적)
+    this.connectHintTimer = setTimeout(() => {  // 옛 화면만 남아 멈춘 것처럼 보이던 것
       if (this.waitingFirstByte && sock === this.ws) showToast("터미널 연결 중…");
     }, 400);
     sock.onopen = () => { if (sock !== this.ws) return; this.everOpen = true; this.wsFails = 0; this.wsHinted = false; this.resize();
@@ -199,7 +199,7 @@ class Pane {
   // ---------- 생존 확인(핑) — 반쯤 죽은 소켓을 잡는다 ----------
   // 윈도우 PC 가 절전·와이파이 전환을 겪으면 서버 쪽 연결은 끊기는데 브라우저는 여전히 '열림'으로
   // 안다. 그러면 화면이 옛 그림에 멈추고, 키를 쳐야(전송이 실패해야) 그제야 끊긴 걸 알고 다시
-  // 붙었다(대표 지적 2026-09-18). visibilitychange 의 readyState 검사도 이 상태는 못 잡는다(열림이니까).
+  // 붙었다. visibilitychange 의 readyState 검사도 이 상태는 못 잡는다(열림이니까).
   // 그래서 브라우저가 주기적으로 핑을 보내고, 답(무슨 메시지든)이 제때 없으면 스스로 다시 붙는다.
   ping() {
     const sock = this.ws;

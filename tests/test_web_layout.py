@@ -125,7 +125,7 @@ def test_결재버튼은_인박스를_연다(desktop):
 
 # ---------- 세션 갈아타기 ----------
 
-# ── 전체 끄기 / 전체 복원 (대표 지시 2026-08-31) ──────────────────────────────
+# ── 전체 끄기 / 전체 복원 ──────────────────────────────
 # 되돌릴 수 없는 조작이 헤더에 상시 노출돼 있다 — 잘못 눌러 세션 열댓 개가 한 번에 죽는 일이
 # 없어야 하고, 되살리는 쪽은 '그때 열려 있던 것만' 이어야 한다.
 
@@ -211,7 +211,7 @@ def test_목록_갱신은_터미널_입력을_끊지_않는다(desktop, bridge):
 
 
 def test_쉬프트엔터는_전송이_아니라_줄바꿈(desktop, bridge):
-    """Zed·VS Code 처럼 ⇧Enter = 줄바꿈(대표 지시). 터미널은 Enter 에 ⇧를 못 실으므로
+    """Zed·VS Code 처럼 ⇧Enter = 줄바꿈. 터미널은 Enter 에 ⇧를 못 실으므로
     클로드 공식 /terminal-setup 과 같은 백슬래시+CR 을 보낸다 — 클로드 입력창이 줄바꿈으로 받는다."""
     open_terminal(desktop)
     bridge.received.clear()
@@ -250,7 +250,7 @@ def test_폰은_목록과_터미널을_오간다(phone):
 
 
 # ---------- 결재 인박스 ----------
-# 이 프로젝트의 핵심. 대표가 "내가 뭘 시켰는지·뭐가 나를 기다리는지"를 잊지 않게 하는 화면이라,
+# 이 프로젝트의 핵심. 사용자가 "내가 뭘 시켰는지·뭐가 나를 기다리는지"를 잊지 않게 하는 화면이라,
 # 카드가 보이는 것만으로는 부족하고 "누르면 그 터미널로 답이 실제로 나가는가"까지가 계약이다.
 
 def open_inbox(page):
@@ -288,8 +288,8 @@ def test_인박스_텍스트_답_전송(desktop, bridge):
 def test_결재_머리글과_헤드라인은_같은_수를_말한다(desktop):
     """상단 헤드라인 '결재 대기 N건'은 살아 있는 것만 센다(서버가 live 로 거른다). 머리글
     '🔴 결재 필요 (N)'이 죽은 세션 카드까지 세면 두 숫자가 어긋나, 정확한 수를 알려주려고
-    있는 화면이 대표에게 '어느 쪽을 믿어야 하나'를 떠넘긴다 — 실측 1건 vs (2).
-    죽은 카드는 숨기지 않는다: 답만 못 보낼 뿐 대표가 손봐야 할 일이라 따로 모아 둔다."""
+    있는 화면이 사용자에게 '어느 쪽을 믿어야 하나'를 떠넘긴다 — 실측 1건 vs (2).
+    죽은 카드는 숨기지 않는다: 답만 못 보낼 뿐 사용자가 손봐야 할 일이라 따로 모아 둔다."""
     open_inbox(desktop)
     # 헤드라인은 상태를 다 말한다 — 결재·지시 대기, 꺼짐은 있을 때만(가짜 브릿지: 1·2·1)
     assert desktop.text_content("#sum-pending") == "결재 대기 1건 · 지시 대기 2건 · 꺼짐 1건"
@@ -304,7 +304,7 @@ def test_이미_넘어간_화면은_숫자가_아니라_사람_말로_알린다(
     """답은 '물어본 클로드'가 아니라 '같은 이름의 tmux 세션'으로 간다. 그래서 보내려는 순간 그
     화면에 피커가 없으면 숫자가 명령으로 실행돼 버리는데, 브릿지가 이제 그걸 409 로 막는다
     (아무것도 보내지 않고 카드도 지우지 않는다). 화면이 '서버 응답 409' 라는 숫자를 보여주면
-    대표는 무슨 일인지도, 뭘 해야 하는지도 알 수 없다 — 그리고 아무것도 안 갔으니 다시 누를 수
+    사용자는 무슨 일인지도, 뭘 해야 하는지도 알 수 없다 — 그리고 아무것도 안 갔으니 다시 누를 수
     있어야 한다."""
     bridge.answers.clear()
     card = open_inbox(desktop).nth(0)                    # wiki 결재(피커)
@@ -313,7 +313,7 @@ def test_이미_넘어간_화면은_숫자가_아니라_사람_말로_알린다(
         desktop.wait_for_timeout(500)
     note = desktop.text_content("#inbox-note")
     assert bridge.answers == []                          # 정말 아무것도 나가지 않았다
-    assert "409" not in note                             # 숫자를 대표에게 떠넘기지 않는다
+    assert "409" not in note                             # 숫자를 사용자에게 떠넘기지 않는다
     assert "넘어갔" in note and "보내지 않았" in note      # 무슨 일이 있었는지
     assert "터미널 열기" in note                          # 다음에 뭘 하면 되는지까지 한 문장에
     assert "꺼져" not in note                             # 404(세션이 죽음)와 헷갈리면 안 된다
@@ -330,7 +330,7 @@ def test_이미_넘어간_화면은_숫자가_아니라_사람_말로_알린다(
 def test_열번째_이상_선택지는_버튼으로_안_만든다(desktop, bridge):
     """tmux send-keys "12" 는 '1','2' 두 키를 보낸다(실증). 클로드 피커는 숫자 하나로 즉시
     고르므로 옵션이 10개 넘는 화면에서 '12번' 버튼을 누르면 1번이 선택되고 남은 '2' 가 다음
-    프롬프트로 흘러간다 — 화면엔 '보냄: 12. …' 가 남아 대표는 12번을 골랐다고 믿는다.
+    프롬프트로 흘러간다 — 화면엔 '보냄: 12. …' 가 남아 사용자는 12번을 골랐다고 믿는다.
     그러니 그런 버튼은 애초에 만들지 않는다: 무엇이 있는지는 글로 보여주고 고르는 일은
     [터미널 열기]에 맡긴다. 1~9번 버튼은 그대로 눌린다."""
     bridge.answers.clear()
@@ -426,7 +426,7 @@ def test_카드가_되살아나도_같은_질문이면_잠긴다(desktop, bridge
 
 
 # 인박스 카드 순서(픽스처 기준): 0=wiki 결재(피커), 1=wiki 완료, 2=frog 완료, 3=gone(세션 꺼짐).
-# 2번 섹션(✅ 완료 — 다음 지시 대기)은 대표가 "다음엔 이거 해" 를 넣는 자리라 가장 자주 쓴다.
+# 2번 섹션(✅ 완료 — 다음 지시 대기)은 사용자가 "다음엔 이거 해" 를 넣는 자리라 가장 자주 쓴다.
 
 def test_완료카드_지시는_다음_완료카드를_잠그지_않는다(desktop, bridge):
     """완료 카드에는 묻는 말이 없다 — 훅이 Stop 에서 message:"" 로 쓴다(hooks/frog_hook.py).
@@ -535,7 +535,7 @@ def expand(page, folder, until):
 
 
 def test_터미널에서_생긴_폴더가_트리에_저절로_나타난다(desktop, bridge):
-    """대표 지적: 오른쪽 패널에 폴더가 생겼는데 실시간으로 안 보인다 — 트리가 첫 읽기 그대로 멈춰 있었다."""
+    """오른쪽 패널에 폴더가 생겨도 실시간으로 안 보이던 문제 — 트리가 첫 읽기 그대로 멈춰 있었다."""
     bridge.fs_patch.clear()
     open_panel(desktop)
     assert "새폴더" not in names(desktop)
@@ -547,7 +547,7 @@ def test_터미널에서_생긴_폴더가_트리에_저절로_나타난다(deskt
 
 
 def test_갱신해도_펼쳐_둔_폴더와_선택은_그대로다(desktop, bridge):
-    """다시 읽는다고 트리를 접어 버리면 대표가 펼쳐 놓은 자리를 매번 잃는다."""
+    """다시 읽는다고 트리를 접어 버리면 사용자가 펼쳐 놓은 자리를 매번 잃는다."""
     bridge.fs_patch.clear()
     open_panel(desktop)
     expand(desktop, "docs", "노트.md")
@@ -561,7 +561,7 @@ def test_갱신해도_펼쳐_둔_폴더와_선택은_그대로다(desktop, bridg
 
 
 def test_파일패널은_기본으로_같이_열린다(desktop):
-    """넓은 화면에서 터미널을 열면 파일 패널이 저절로 같이 열린다(대표 지시 — 열림이 기본값)."""
+    """넓은 화면에서 터미널을 열면 파일 패널이 저절로 같이 열린다(열림이 기본값)."""
     open_terminal(desktop)
     desktop.wait_for_selector("#fp-body li")
     assert desktop.is_visible("#file-panel")
@@ -602,7 +602,7 @@ def test_좁은_데스크톱_폭에서는_파일패널이_자동으로_안_열�
     desktop.wait_for_selector("#fp-body li")
 
 
-# ---------- 병렬 터미널 탭 — 같은 프로젝트에서 터미널 여러 개(Zed 차용, 대표 지시) ----------
+# ---------- 병렬 터미널 탭 — 같은 프로젝트에서 터미널 여러 개(Zed 차용) ----------
 
 def test_플러스로_같은_프로젝트_터미널을_하나_더_연다(desktop, bridge):
     """+ 를 누르면 wiki@2 세션으로 새 터미널 — 헤더 이름·파일 패널은 여전히 프로젝트(wiki) 기준."""
@@ -692,7 +692,7 @@ def test_파일패널_이미지는_그자리에서_읽기전용으로_보인다(
 
 
 def test_파일뷰는_닫기버튼과_폴더이동으로_닫힌다(desktop):
-    """열어 둔 파일이 계속 남아 있다(대표 지적) — ✕ 닫기로 손으로, 폴더로 나가면 자동으로 닫힌다.
+    """열어 둔 파일이 계속 남아 있다 — ✕ 닫기로 손으로, 폴더로 나가면 자동으로 닫힌다.
     저장 안 한 수정이 있을 때 안 닫는 계약은 test_편집_중_폴더를_펴도_수정은_남는다 가 지킨다."""
     open_panel(desktop)
     open_file(desktop, "README.md")
@@ -736,7 +736,7 @@ def test_새폴더는_루트와_폴더안_양쪽에_만든다(desktop, bridge):
 def test_파일패널_글자크기_스텝퍼(desktop):
     """패널 머리의 −/+ 가 트리(폴더·파일명)·본문 글자를 함께 키운다 — 이 기기 설정에 남는다.
     ★ 반드시 트리 줄로 잰다 — 본문만 커지고 트리는 고정 13px 에 박혀 '버튼이 안 된다'로
-    보인 실측 버그(대표 지적)의 재발 방지."""
+    보인 실측 버그의 재발 방지."""
     open_panel(desktop)
     size = lambda: float(desktop.evaluate(
         "getComputedStyle(document.querySelector('#fp-tree .tree-row')).fontSize")[:-2])
@@ -745,7 +745,7 @@ def test_파일패널_글자크기_스텝퍼(desktop):
         assert desktop.text_content("#fp-fs-val") == str(int(base))   # 숫자가 늘 보인다
         desktop.click("#fp-fs-plus")
         assert size() == base + 1
-        # 1px 변화는 눈에 안 띈다 — 숫자가 즉시 바뀌는 것이 '눌렸다'는 피드백이다(대표 실측 지적)
+        # 1px 변화는 눈에 안 띈다 — 숫자가 즉시 바뀌는 것이 '눌렸다'는 피드백이다(실측)
         assert desktop.text_content("#fp-fs-val") == str(int(base + 1))
         assert '"fpFontSize":' in (desktop.evaluate("localStorage.getItem('frog.prefs')") or "")
         desktop.click("#fp-fs-minus")
@@ -798,7 +798,7 @@ def test_저장_충돌은_고친_내용을_지우지_않는다(desktop):
     desktop.wait_for_timeout(400)
     assert "먼저 바뀌" in desktop.text_content("#fp-note")
     assert desktop.input_value("#fp-body textarea") == "손으로 오래 쓴 글"   # 내 글은 그대로 — 복사 가능
-    assert desktop.is_visible("#fp-note-act")            # 덮어쓸지 말지는 대표가 고른다
+    assert desktop.is_visible("#fp-note-act")            # 덮어쓸지 말지는 사용자가 고른다
     desktop.unroute("**/api/file")
 
 
@@ -832,7 +832,7 @@ def test_세션을_갈아타면_패널도_그_프로젝트로(desktop):
 def test_늦게_온_파일_응답은_바뀐_프로젝트를_덮지_않는다(desktop, bridge):
     """파일을 연 직후(응답이 늦는 사이) 세션을 갈아타면 늦게 도착한 옛 응답이 마지막에 이겨,
     'mall' 이라 써 놓은 패널에 wiki 파일 내용이 그려졌다 — 이 앱이 막으려던 바로 그 사고다.
-    화면이 스스로 회복되지 않아 대표가 그대로 고쳐 저장할 시간은 얼마든지 있고, 저장은 409 로
+    화면이 스스로 회복되지 않아 사용자가 그대로 고쳐 저장할 시간은 얼마든지 있고, 저장은 409 로
     한 번 막히지만 그때 뜨는 안내가 '다른 곳에서 먼저 바뀌었습니다'라는 거짓 설명이라
     그 옆 [덮어쓰기] 한 번이면 mall/README.md 가 wiki 내용으로 대체된다."""
     open_panel(desktop, 1)                                   # wiki
@@ -869,7 +869,7 @@ def test_편집_중_세션을_갈아타도_수정은_남는다(desktop):
     """고치던 글을 놔둔 채 사이드바에서 다른 프로젝트를 누르는 길 — 이 앱에서 가장 위험한 자리다.
 
     패널은 '지금 그 프로젝트'를 따라가야 하지만(위 테스트), 따라가면서 편집 중인 내용을 그냥
-    지워 버리면 대표가 쓰던 글이 말없이 사라진다. 터미널만 옮기고 패널은 그 자리에 세워 둔 뒤
+    지워 버리면 사용자가 쓰던 글이 말없이 사라진다. 터미널만 옮기고 패널은 그 자리에 세워 둔 뒤
     버릴지 말지를 되묻는 것이 계약이다."""
     open_panel(desktop, 1)                               # wiki
     open_file(desktop, "README.md")
@@ -888,7 +888,7 @@ def test_편집_중_세션을_갈아타도_수정은_남는다(desktop):
 
 
 def test_인박스는_팝업이라_터미널이_그대로_남는다(desktop):
-    """인박스는 화면 교대가 아니라 오른쪽 팝업(대표 지시 — 터미널 전체를 가리지 않는다).
+    """인박스는 화면 교대가 아니라 오른쪽 팝업(터미널 전체를 가리지 않는다).
     그래서 터미널 헤더(📁 포함)와 파일 패널은 인박스가 떠 있어도 그대로 살아 있고,
     ✕ 로 닫으면 아무 일도 없었던 듯 이어서 일한다."""
     open_panel(desktop)
@@ -1002,7 +1002,7 @@ def test_늦게_온_폴더_응답은_바뀐_프로젝트_트리를_덮지_않는
 
 
 def test_파일을_열어도_트리는_남는다(desktop):
-    """대표 요청: 파일을 고르면 패널이 넓어지며 문서가 보인다. 그러면서도 트리는 사라지지 않는다 —
+    """파일을 고르면 패널이 넓어지며 문서가 보인다. 그러면서도 트리는 사라지지 않는다 —
     문서 하나 보려고 폴더를 처음부터 다시 펴야 하면 트리를 만든 뜻이 없다."""
     open_panel(desktop)
     expand(desktop, "docs", "노트.md")
@@ -1045,8 +1045,8 @@ def test_폰_트리는_깊어져도_옆으로_넘치지_않는다(phone):
 
 
 # ---------- 카드 대화 맥락 ----------
-# 대표 지적: "이 화면에서 무슨 내용인지 보여야 내가 판단을 하지. 클로드가 내가 뭘 하길 요청했는지
-# 그 대화 내역을 봐야 내가 알지." — 훅 원문(message)은 "Claude is waiting for your input" 이라
+# 판단하려면 이 화면에서 무슨 내용인지 보여야 하고, 클로드가 무엇을 요청했는지
+# 그 대화 내역이 보여야 한다. 훅 원문(message)은 "Claude is waiting for your input" 이라
 # 아무것도 알려주지 않는다. 브릿지가 대화에서 뽑아 주는 asked(내가 시킨 것)·said(클로드가 한 말)로
 # 그 자리를 채우는 것이 이 절의 계약이다.
 
@@ -1146,7 +1146,7 @@ def test_에이전트_새버전배지와_업데이트뒤_재시작안내(desktop
 
 
 def test_설정_바이패스_토글과_실행명령이_저장된다(desktop, bridge):
-    """대표 지시 — 실행 별칭은 [저장] 버튼과 Enter 둘 다 서버로 보내고 새 셸 안내를 보인다."""
+    """실행 별칭은 [저장] 버튼과 Enter 둘 다 서버로 보내고 새 셸 안내를 보인다."""
     bridge.agent_posts.clear()
     try:
         desktop.click("#btn-settings")
@@ -1163,7 +1163,7 @@ def test_설정_바이패스_토글과_실행명령이_저장된다(desktop, bri
         cmds.nth(0).fill("ca")                                  # 클로드 실행 별칭
         cmds.nth(1).fill("cx")                                  # 코덱스 실행 별칭
         assert desktop.is_visible("#set-cmds .set-cmd-save")
-        desktop.click("#set-cmds .set-cmd-save")                # 대표가 요청한 명시적 저장 버튼
+        desktop.click("#set-cmds .set-cmd-save")                # 명시적 저장 버튼
         desktop.wait_for_timeout(400)
         assert {"commands": {"claude": "ca", "codex": "cx"}} in bridge.agent_posts
         assert "새로 여는 터미널부터 ca · cx로 시작" in desktop.text_content("#set-note")
@@ -1225,7 +1225,7 @@ def test_설정_화이트_테마는_이_기기에_남는다(desktop):
 
 def test_테마는_터미널과_패널이_한_세트로_바뀐다(desktop):
     """테마에서 One Dark 를 고르면 패널(root 클래스)과 터미널 색(termTheme)이 같이 One Dark 가
-    된다 — 3세트(개구리 다크·One Dark·라이트) 일치(대표 지시 2026-08-15)."""
+    된다 — 3세트(개구리 다크·One Dark·라이트) 일치."""
     desktop.click("#btn-settings")
     desktop.wait_for_selector("#set-ui .set-choice")
     labels = desktop.locator("#set-ui .set-choice").all_text_contents()
@@ -1290,8 +1290,8 @@ def test_파일트리_드래그를_터미널이_경로_입력으로_받는다(de
 
 
 # ---------- 상단 결재 대시보드(피커) ----------
-# 대표 지적: "상단에는 대시보드 형태로 지금 내가 결정해야 될 게 있으면 피커 형태로 만들어 달라고
-# 했는데, 지금은 '결재 대기' text 표기만 되는데?" — 인박스까지 들어가지 않고 상단에서 바로 고른다.
+# 지금 결정해야 할 것이 있으면 '결재 대기' 글자만 띄우지 않고 상단 대시보드에 선택 버튼(피커)으로
+# 보여 준다 — 인박스까지 들어가지 않고 상단에서 바로 고른다.
 
 def dash_card(page, nth=0):
     page.wait_for_selector(".dash-card")
@@ -1316,7 +1316,7 @@ IDLE_CARD = {"sessionId": "mall-9", "project": "mall", "cwd": "/tmp/mall", "mach
 
 
 def test_놀고있는_세션은_빨간불을_켜지_않는다(desktop):
-    """★ 대표 지적(2026-08-14): "결재 대기가 이전 것인데 계속 남아 있다."
+    """★ 이미 끝난 이전 결재가 '결재 대기'로 계속 남아 있던 문제(2026-08-14).
 
     그 카드는 할 말을 마치고 빈 프롬프트에서 쉬는 세션(idle)이었다 — 결정할 거리가 없는데도
     빨간불을 켜서, 정작 답해야 할 결재가 그 안에 묻혔다. 대시보드에는 '답이 없으면 클로드가
@@ -1364,7 +1364,7 @@ def test_tmux밖_세션_카드는_잠기고_이유를_적는다(desktop, bridge)
 
 def test_대시보드_숫자는_상단_헤드라인과_같다(desktop):
     """살아 있는 것만 세는 헤드라인('결재 대기 N건')과 다른 수를 말하면, 정확한 수를 알려주려고
-    있는 화면이 대표에게 '어느 쪽을 믿어야 하나'를 떠넘긴다."""
+    있는 화면이 사용자에게 '어느 쪽을 믿어야 하나'를 떠넘긴다."""
     dash_card(desktop)
     assert desktop.text_content("#sum-pending").startswith("결재 대기 1건")
     head = desktop.text_content("#dash-toggle")
@@ -1454,7 +1454,7 @@ def test_인박스에서_보낸_답은_대시보드에서도_잠긴다(desktop, 
 
 
 def test_대시보드_직접_지시는_그_세션으로_간다(desktop, bridge):
-    """선택지를 못 읽은 결재 카드(permission)는 대표가 답을 글로 직접 넣는 자리다.
+    """선택지를 못 읽은 결재 카드(permission)는 사용자가 답을 글로 직접 넣는 자리다.
 
     (놀고 있는 세션(idle)에 다음 지시를 넣는 자리는 인박스의 '✅ 완료 — 다음 지시 대기' 쪽이다 —
      대시보드는 답이 없으면 클로드가 못 나가는 것만 올린다.)
@@ -1511,7 +1511,7 @@ def test_폰_대시보드_선택지는_손가락_크기다(phone):
 
 
 # ---------- 분할선 드래그 ----------
-# 대표 지적: "3섹션 분할라인이 좌우 여백 조정도 안 되고" — 색은 CSS 에서 고쳤고, 여기서는 폭이다.
+# 3열 분할선으로 좌우 폭을 조정할 수 있어야 한다 — 색은 CSS 에서 고쳤고, 여기서는 폭이다.
 
 LIST_SPLIT = '.splitter[data-pane="list"]'
 FILE_SPLIT = '.splitter[data-pane="file"]'
@@ -1531,7 +1531,7 @@ def width_of(page, selector):
     return page.locator(selector).bounding_box()["width"]
 
 
-# ---------- 사이드바 접기 — 터미널 헤더의 « » (대표 지시: 슬라이드 숨김) ----------
+# ---------- 사이드바 접기 — 터미널 헤더의 « » (슬라이드 숨김) ----------
 
 def test_사이드바_접기_버튼은_폭을_0으로_밀고_다시_펴면_원래_폭이다(desktop):
     desktop.evaluate("localStorage.removeItem('frog.side.collapsed')")
@@ -1624,7 +1624,7 @@ def test_파일패널_분할선은_패널을_열어야_나온다(desktop):
 
 
 def test_직접_끈_파일패널_폭은_파일을_열어도_그대로다(desktop):
-    """파일을 열면 .wide(55%)가 걸린다 — 하지만 대표가 직접 끈 폭이 있으면 그쪽이 이긴다.
+    """파일을 열면 .wide(55%)가 걸린다 — 하지만 사용자가 직접 끈 폭이 있으면 그쪽이 이긴다.
     '폭 조절이 안 된다'가 이 작업의 출발점인데 화면이 제멋대로 되돌리면 고친 뜻이 없다."""
     open_panel(desktop)
     drag(desktop, FILE_SPLIT, -100)
@@ -1648,8 +1648,8 @@ def test_창을_좁히면_끈_폭을_놓는다(desktop):
 
 
 # ---------- 사이드바 끄기·숨김 ----------
-# 대표 지적: "tmux 터미널을 종료할 수도 있어야 돼, 아니면 계속 메모리만 늘어날 테니까.
-# 끄기 버튼이나, 앞으로 더 이상 나오지 않도록 아예 숨김 처리 버튼도… 물론 숨긴 걸 다시 나오도록 하는 UI도."
+# tmux 터미널을 끌 수 있어야 한다(안 그러면 메모리만 계속 는다). 끄기 버튼, 목록에서
+# 더 이상 안 나오게 하는 숨김 버튼, 숨긴 것을 다시 보이게 하는 UI 를 둔다.
 
 def row_of(page, nth=0):
     """그 줄에 손을 얹는다 — 액션 버튼은 평소 숨어 있다가 hover/focus 때만 나온다(CSS)."""
@@ -1659,7 +1659,7 @@ def row_of(page, nth=0):
 
 
 def test_사이드바_액션은_작은_아이콘_세로_스택이다(clean_favs, desktop):
-    """글자 버튼('끄기')이 커서 자꾸 잘못 눌렸다(대표 지적) — 아이콘으로 줄이고 뜻은 title 로.
+    """글자 버튼('끄기')이 커서 자꾸 잘못 눌렸다 — 아이콘으로 줄이고 뜻은 title 로.
 
     순서 계약: 즐겨찾기가 맨 앞, 끄기는 .danger, 숨기기는 늘 :last-child.
     (숨기기를 집는 기존 테스트들이 :last-child 를 쓰므로 새 버튼은 스택 앞쪽에 선다.)
@@ -1706,7 +1706,7 @@ def test_끄기_취소면_아무것도_안_간다(desktop, bridge):
 
 def test_끄기_404는_경고로_띄우지_않는다(desktop, bridge):
     """폴더 없이 tmux 세션만 있던 항목은 끈 뒤 이름 자체가 사라져 두 번째 요청이 404 다.
-    결과는 어차피 '꺼짐'이라, 대표가 할 일이 하나도 없는 경고를 띄우면 안 된다."""
+    결과는 어차피 '꺼짐'이라, 사용자가 할 일이 하나도 없는 경고를 띄우면 안 된다."""
     with bridge.kill_gone():
         row = row_of(desktop)
         row.locator(".row-acts button.danger").click()
@@ -1725,7 +1725,7 @@ def test_꺼진_세션에는_끄기_버튼이_없다(desktop):
 
 
 def test_꺼진_세션은_되묻고_켜기를_눌러야_열린다(desktop):
-    """목록을 스치기만 해도 프로젝트가 우수수 켜지던 문제(대표 지적).
+    """목록을 스치기만 해도 프로젝트가 우수수 켜지던 문제.
     꺼진 것을 누르면 tmux 세션이 새로 서므로 끄기와 같은 자리·같은 모양으로 한 번 더 묻는다."""
     row = row_of(desktop, 4)                                        # apex — 꺼짐
     row.locator("b").click()
@@ -1782,7 +1782,7 @@ def test_숨기면_목록에서_빠지고_되돌릴_수_있다(clean_hidden, des
 
 
 def test_숨긴_항목은_결재_수에_영향을_주지_않는다(clean_hidden, desktop):
-    """숨김은 사이드바를 접는 것일 뿐이다 — 그 프로젝트가 대표를 기다리고 있다는 사실은 그대로다."""
+    """숨김은 사이드바를 접는 것일 뿐이다 — 그 프로젝트가 사용자를 기다리고 있다는 사실은 그대로다."""
     row_of(desktop).locator(".row-acts button:last-child").click()  # wiki 숨김(결재 1건짜리)
     desktop.wait_for_timeout(600)
     assert desktop.text_content("#sum-pending").startswith("결재 대기 1건")
@@ -1826,7 +1826,7 @@ def test_폰에서는_액션_버튼이_늘_보인다(phone):
 
 
 # ---------- 되묻기가 열리는 동안의 겹침 ----------
-# 대표 스크린샷: 🗑 를 눌러 확인 상자가 뜨자 아이콘 스택이 그 위에 겹쳐 앉아 문구와 [끄기]를 가렸다.
+# 실측(스크린샷): 🗑 를 눌러 확인 상자가 뜨자 아이콘 스택이 그 위에 겹쳐 앉아 문구와 [끄기]를 가렸다.
 # 원인은 스택이 absolute + top:50% 중앙 정렬 + 불투명 배경이라, 확인 상자가 붙어 줄이 세로로
 # 커지면 그 한가운데(=확인 영역)로 내려앉는 것. 열려 있는 동안 통째로 비켜나야 한다.
 
@@ -1870,7 +1870,7 @@ def test_폰에서도_되묻기_동안은_아이콘_스택이_비켜난다(phone
 
 
 # ---------- 사이드바 즐겨찾기 ----------
-# 대표 지시: "즐겨찾기된 프로젝트는 무조건 목록 맨 위로, 즐겨찾기한 순서대로."
+# 즐겨찾기한 프로젝트는 무조건 목록 맨 위에, 즐겨찾기한 순서대로 둔다.
 # 그 아래는 기존 규칙(결재>진행중>완료>그 외, 같은 상태 안에서 이름순)이 그대로 이어진다.
 # 픽스처의 상태순은 wiki·mall·blog·frog·apex — 맨 아래 apex(꺼짐)를 올려야 순서 변화가 드러난다.
 
@@ -1905,7 +1905,7 @@ def test_즐겨찾기를_누르면_POST_가_가고_별이_붙는다(clean_favs, 
 
 
 def test_즐겨찾기_2개는_누른_순서로_맨_위에_온다(clean_favs, desktop):
-    """이름순도 상태순도 아니다 — 대표가 누른 순서가 그대로 맨 위의 순서다."""
+    """이름순도 상태순도 아니다 — 사용자가 누른 순서가 그대로 맨 위의 순서다."""
     fav_btn(row_named(desktop, "apex")).click()            # 꺼짐(맨 아래) 먼저
     desktop.wait_for_timeout(600)
     fav_btn(row_named(desktop, "blog")).click()            # 완료(가운데) 다음
@@ -2015,7 +2015,7 @@ def test_새_배포를_감지하면_새로고침_배너가_뜬다(desktop, bridg
 
 def test_파인더_폴더_드롭은_통째로_올리고_폴더_경로를_찍는다(desktop, bridge):
     """웹은 폴더의 원본 경로를 알 수 없다(브라우저 보안) — 대신 하위 구조 그대로 업로드하고
-    저장된 폴더 경로를 한 번 찍는다(대표 지시: 파인더·탐색기에서 마음대로 드래그).
+    저장된 폴더 경로를 한 번 찍는다(파인더·탐색기에서 마음대로 드래그).
     entry 객체는 webkitGetAsEntry 와 같은 모양으로 조립한다(진짜 디렉터리 드래그는 브라우저
     밖에서만 만들 수 있어 여기서는 API 계약을 그대로 흉내낸다)."""
     bridge.uploads.clear()
@@ -2042,7 +2042,7 @@ def test_파인더_폴더_드롭은_통째로_올리고_폴더_경로를_찍는�
 
 
 def test_드롭한_파일은_원본을_찾으면_그_경로만_찍는다(desktop, bridge):
-    """대표 지적: 뭘 끌든 _uploads 사본으로 가 같은 이름끼리 뭉개지고 캐시만 늘었다 —
+    """예전엔 뭘 끌든 _uploads 사본으로 가 같은 이름끼리 뭉개지고 캐시만 늘었다 —
     맥에서 원본이 특정되면 사본 없이 진짜 경로를 찍는다."""
     bridge.uploads.clear()
     bridge.locate_map["대본.md"] = "/Users/x/문서/대본.md"
@@ -2075,7 +2075,7 @@ def test_원본을_못_찾으면_업로드로_물러선다(desktop, bridge):
 
 def test_키바에_파일_넣기_버튼이_있다(desktop):
     """폰에는 파인더 드래그도 쓸 만한 클립보드 이미지도 없다 — 이 버튼이 없으면 사진을
-    넣을 길이 아예 없다(대표 지적)."""
+    넣을 길이 아예 없다."""
     open_terminal(desktop)
     assert desktop.locator("#keybar #pick-file").count() == 1
     picker = desktop.locator("#file-pick")
@@ -2126,7 +2126,7 @@ def right_click_on_path(page, path):
 
 
 def test_터미널_우클릭_메뉴로_기본앱에서_연다(desktop, bridge):
-    """브라우저·tmux 메뉴를 막았으니 대신 쓸 메뉴를 우리가 준다(대표 지시).
+    """브라우저·tmux 메뉴를 막았으니 대신 쓸 메뉴를 우리가 준다.
     커서 밑 경로를 기본 앱·미리보기·파인더로 열고 경로 복사도 된다."""
     bridge.opens.clear()
     open_terminal(desktop)
@@ -2155,7 +2155,7 @@ def test_프로젝트_밖_절대경로도_Ctrl클릭으로_열린다(desktop, br
     assert bridge.opens[-1] == {"abs": SCRATCH_PATH, "app": "default"}
 
 
-# ---------- 터미널 링크 — 폰은 탭으로 열고, localhost 는 이 화면의 호스트로 (대표 지적 2026-08-22) ----------
+# ---------- 터미널 링크 — 폰은 탭으로 열고, localhost 는 이 화면의 호스트로 ----------
 
 def cell_xy(page, col, row):
     """터미널 (col,row) 칸의 가운데 화면 좌표 — app.js 의 pathAtEvent 와 같은 셈법."""
@@ -2232,7 +2232,7 @@ def test_괄호_든_경로도_통째로_링크된다(desktop, bridge):
 
 
 def test_설정에서_캐시를_확인하고_비운다(desktop, bridge):
-    """대표 지시(2026-08-15): 사본이 계속 쌓이니 설정에 비우기 버튼을 둔다.
+    """사본이 계속 쌓이니 설정에 비우기 버튼을 둔다.
     되돌릴 수 없으므로 한 번 되묻고, 비운 뒤에는 '비어 있음'으로 바뀐다."""
     bridge.cache = {"bytes": 3 * 1024 * 1024, "files": 7}
     bridge.cache_cleared = 0
@@ -2252,7 +2252,7 @@ def test_설정에서_캐시를_확인하고_비운다(desktop, bridge):
 
 
 def test_새_프로젝트를_만들면_바로_그_터미널이_열린다(desktop, bridge):
-    """대표 지시(2026-08-15): 사이드바 ＋ 로 이름만 정하면 폴더가 생기고 곧바로 실행된다."""
+    """사이드바 ＋ 로 이름만 정하면 폴더가 생기고 곧바로 실행된다."""
     bridge.new_projects.clear()
     assert desktop.locator("#proj-new-name").is_hidden()       # 평소엔 접혀 있다
     desktop.click("#proj-new")
@@ -2311,7 +2311,7 @@ def test_창으로_돌아오면_끊긴_소켓을_바로_다시_붙인다(desktop
 
 
 def test_파일_편집_색을_따로_고른다(desktop):
-    """오른쪽 파일 편집 창의 밝기를 앱 껍데기와 따로 잡는다(대표 지시 2026-08-16).
+    """오른쪽 파일 편집 창의 밝기를 앱 껍데기와 따로 잡는다.
     기본은 '화면과 같게' — 고르기 전에는 지금 보이던 모습 그대로다."""
     open_panel(desktop)
     desktop.click("#btn-settings")
@@ -2485,7 +2485,7 @@ def test_브라우저_모드_캔버스_클릭과_글자는_원격_탭으로_간�
 
 
 def test_안_연_프로젝트는_패널이_저절로_붙어도_크롬을_띄우지_않는다(desktop, bridge):
-    """대표 지시(2026-09-20): 연 것은 유지, 안 연 것은 열지 마라 — 메모리. 손으로 [브라우저 열기] 를 눌러야 뜬다."""
+    """연 것은 유지, 안 연 것은 열지 않는다 — 메모리 절약. 손으로 [브라우저 열기] 를 눌러야 뜬다."""
     bridge.browser_running.clear(); bridge.browser_cmds.clear()
     open_browser(desktop, "wiki")
     desktop.click("#bp-mode-browser")                                   # 손으로 누른 것 = 띄워도 된다
@@ -2516,7 +2516,7 @@ def test_끄기_버튼은_그_프로젝트_브라우저만_종료한다(desktop,
 
 
 def test_브라우저_패널_열림은_프로젝트마다_따로_기억된다(desktop, bridge):
-    """대표 지적(2026-09-21): wiki 에서 열었는데 mall 로 가도 열려 있고, 한쪽에서 끄면 다른 쪽도 꺼져 보였다.
+    """예전엔 wiki 에서 열었는데 mall 로 가도 열려 있고, 한쪽에서 끄면 다른 쪽도 꺼져 보였다.
     패널의 hidden 은 화면 하나뿐이라 전역이었다 — 이제 프로젝트마다 열림 여부를 기억한다."""
     bridge.browser_running.clear()
     open_browser(desktop, "wiki")                               # wiki 에서 🌐 로 연다

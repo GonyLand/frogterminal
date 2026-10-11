@@ -15,8 +15,8 @@ const VK = { Enter: 13, Backspace: 8, Tab: 9, Escape: 27, ArrowLeft: 37, ArrowUp
              Delete: 46, Home: 36, End: 35, PageUp: 33, PageDown: 34, F5: 116 };
 
 function rbMode() { return bpPanel().dataset.mode || "preview"; }
-// start=true 는 "없으면 새로 띄워라" — 대표가 [브라우저] 를 직접 누를 때만이다. 프로젝트를 갈아타거나 패널을 다시 열어
-// 저절로 붙는 경우는 start=false 라, 안 연 프로젝트에 크롬이 서지 않는다(대표 지시 2026-09-20: 메모리).
+// start=true 는 "없으면 새로 띄워라" — 사용자가 [브라우저] 를 직접 누를 때만이다. 프로젝트를 갈아타거나 패널을 다시 열어
+// 저절로 붙는 경우는 start=false 라, 안 연 프로젝트에 크롬이 서지 않는다(메모리 절약).
 function rbSetMode(mode, start = false) {
   bpPanel().dataset.mode = mode;
   document.getElementById("bp-mode-preview").classList.toggle("on", mode === "preview");

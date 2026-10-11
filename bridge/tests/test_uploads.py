@@ -38,7 +38,7 @@ def test_build_upload_path_subdir_는_날짜폴더_아래에_구조를_만든다
     assert p.name == "b.png"
 
 
-# ---------- 캐시 비우기 (대표 지시 2026-08-15) ----------
+# ---------- 캐시 비우기 ----------
 
 def test_clear_는_날짜폴더만_지우고_감사로그는_남긴다(tmp_path):
     audit = tmp_path / "frogterminal-audit.log"      # 캐시와 같은 자리에 사는 감사로그

@@ -95,7 +95,7 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
     <div class="pane"><div id="terminal" class="pane-term"></div></div>
   </div>
   <!-- 공통 HUD — 여러 칸일 때 칸마다 반복되던 계정 사용량 줄을 한 세트만(grid.js). 1칸이면 접힌다.
-       터미널 영역 안에 둔다 — 사이드바 밑까지 퍼지지 않고 칸들의 왼쪽 선에서 시작한다(대표 지시). -->
+       터미널 영역 안에 둔다 — 사이드바 밑까지 퍼지지 않고 칸들의 왼쪽 선에서 시작한다. -->
   <div id="hud" hidden></div>
   <nav id="keybar">
     <button data-seq="\u001b">Esc</button>
@@ -104,7 +104,7 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
     <button data-seq="\u001b[B">↓</button>
     <button id="ctrl-key">Ctrl</button>
     <!-- 폰에는 드래그&드롭이 없고 클립보드 이미지도 브라우저가 잘 안 넘겨준다 — 사진을 넣을
-         길이 아예 없었다(대표 지적). accept 를 비워 두면 폰이 '사진 보관함·사진 찍기·파일'을
+         길이 아예 없었다. accept 를 비워 두면 폰이 '사진 보관함·사진 찍기·파일'을
          모두 띄운다. 종류를 좁히면 영상·pdf 를 못 고른다. -->
     <button id="pick-file" title="사진·파일 넣기">📎</button>
     <button data-seq="\r">⏎</button>
@@ -112,7 +112,7 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
   <input id="file-pick" type="file" multiple hidden>
 </section>
 
-<!-- 결재 인박스 — 설정과 같은 오른쪽 팝업 패널(대표 지시: 터미널 전체를 가리지 않는다).
+<!-- 결재 인박스 — 설정과 같은 오른쪽 팝업 패널(터미널 전체를 가리지 않는다).
      닫기 = ✕ · 결재 버튼 다시 누르기 · Esc. 폰에서는 전면으로 편다. -->
 <aside id="inbox-view" hidden>
   <header class="pane-head"><h2>결재 인박스</h2><span class="head-spacer"></span><button id="inbox-back" title="닫기">✕</button></header>
@@ -121,7 +121,7 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
 </aside>
 
 <!-- 설정은 화면 교대가 아니라 오른쪽 팝업 패널 — 뒤의 터미널이 보여야 테마·글자 변경이
-     누르는 즉시 눈으로 확인된다(대표 지시). 닫기 = ✕ · ⚙ 다시 누르기 · Esc. -->
+     누르는 즉시 눈으로 확인된다. 닫기 = ✕ · ⚙ 다시 누르기 · Esc. -->
 <aside id="settings-view" hidden>
   <header class="pane-head"><h2>설정</h2><span class="head-spacer"></span><button id="settings-back" title="닫기">✕</button></header>
   <p id="set-note" hidden></p>                <!-- 저장 성공·실패 안내 — alert() 대신 화면 안에 한 줄 -->

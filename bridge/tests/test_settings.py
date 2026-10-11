@@ -1,7 +1,7 @@
 """설정(시작 에이전트·bypass·RC·실행 별칭)·에이전트 상태 테스트.
 
 commands는 자유 명령이 아니라 claude·codex를 가리키는 안전한 별칭 이름이다. 저장 테스트는
-반드시 tmp_path의 가짜 .zshrc만 사용한다 — 개발·대표 계정의 실제 셸 설정은 시험 대상이 아니다.
+반드시 tmp_path의 가짜 .zshrc만 사용한다 — 개발자·사용자 계정의 실제 셸 설정은 시험 대상이 아니다.
 """
 import json
 import uuid
@@ -11,7 +11,7 @@ import pytest
 
 from bridge import agent_updates, config, sessions, settings
 
-# bypass 기본 켬 — Orca 와 같은 기본값(전권한 플래그 기본 적용), 대표 실사용도 늘 bypass.
+# bypass 기본 켬 — Orca 와 같은 기본값(전권한 플래그 기본 적용), 실사용도 늘 bypass.
 # cont(이어서 시작) 도 기본 켬 — exit 로 나갔다 다시 뜰 때마다 맥락이 날아가던 것을 잇는다.
 DEFAULTS = {"projectsRoot": str(config.DEFAULT_PROJECTS_ROOT),
             "agent": "claude", "bypass": True, "rc": False, "cont": True,
@@ -130,7 +130,7 @@ def test_빈_별칭은_거부하지_않고_해당_줄과_블록을_지운다(set
 def test_옛_cl_두줄을_마커_블록으로_이동하고_사용자_줄과_백업을_보존한다(settings_file):
     zshrc = settings.ZSHRC_FILE
     before = ("alias mine=\"keep-me\"\n"
-              "# frogterminal — 클로드 약칭 (2026-08-15 대표 지시: 설정의 실행 명령 'cl' 이 동작하도록)\n"
+              "# frogterminal — 클로드 약칭 (설정의 실행 명령 'cl' 이 동작하도록)\n"
               "alias cl=\"claude\"\n"
               "export USER_SETTING=\"한 글자도 바꾸지 마\"\n").encode()
     zshrc.write_bytes(before)
@@ -202,7 +202,7 @@ def test_launch_command_기본과_플래그(settings_file):
 
 
 def test_launch_command_커스텀_약칭(settings_file):
-    """대표 지시 — claude 대신 cl 같은 별칭으로도 뜨게. zsh -lic 라 .zshrc alias 가 산다.
+    """claude 대신 cl 같은 별칭으로도 뜨게. zsh -lic 라 .zshrc alias 가 산다.
     bypass·RC 토글은 커스텀 명령에도 그대로 붙는다(토글이 명령보다 우선하는 스위치다)."""
     settings.save({"commands": {"claude": "cl", "codex": "cx"}})
     assert claude_body(settings.launch_command("claude", "p")) == "cl --dangerously-skip-permissions"
@@ -227,7 +227,7 @@ def test_attach_cmd_는_시작명령을_새세션_명령으로_붙인다(setting
 # ── 이어서 시작(cont) — 프로젝트마다 하나의 대화 ────────────────────────────
 
 def test_기본세션은_continue_로_직전_대화를_잇는다(settings_file, tmp_path):
-    """대표 지시: exit 로 나갔다 오면 나가기 직전 대화로 돌아온다.
+    """exit 로 나갔다 오면 나가기 직전 대화로 돌아온다.
     고정 UUID(--session-id)는 --remote-control 과 함께 쓰면 무시된다 — 지정한 ID 에 아무것도
     안 쌓여 다음 --resume 이 낡은 대화를 열었다(2026-08-24 실측). 클로드가 관리하는
     --continue 로 간다: 그 폴더의 가장 최근 대화 = 방금 나간 그 대화."""
@@ -280,7 +280,7 @@ def test_probe_는_토큰을_내보내지_않는다(monkeypatch, tmp_path):
     """계정 표시는 email·org 뿐 — oauth 토큰·API 키가 API 응답으로 새면 안 된다."""
     claude_cfg = tmp_path / ".claude.json"
     claude_cfg.write_text(json.dumps({"oauthAccount": {
-        "emailAddress": "ceo@d-onworks.com", "organizationName": "디온웍스",
+        "emailAddress": "me@example.com", "organizationName": "Example Org",
         "accountUuid": "비밀-uuid"}}))
     codex_auth = tmp_path / "auth.json"
     codex_auth.write_text(json.dumps({"OPENAI_API_KEY": "sk-비밀", "tokens": {"access_token": "비밀"}}))
@@ -290,7 +290,7 @@ def test_probe_는_토큰을_내보내지_않는다(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "_claude_doctor", lambda: {})
     got = settings.probe()
     assert got["claude"] == {"installed": True, "version": "9.9.9",
-                             "email": "ceo@d-onworks.com", "org": "디온웍스"}
+                             "email": "me@example.com", "org": "Example Org"}
     assert got["codex"] == {"installed": True, "version": "9.9.9", "loggedIn": True}
     assert "비밀" not in json.dumps(got, ensure_ascii=False)
 
@@ -409,7 +409,7 @@ def test_업데이트_실행은_별칭없이_고정_리스트인자만_쓴다(mo
 
 CSWAP_OUT = """\
 A newer version of claude-swap is available (0.25.0). You are using 0.24.0. Run `cswap upgrade` to update.
-Status: Account-2 (ceo@d-onworks.com [ceo@d-onworks.com's Organization])
+Status: Account-2 (me@example.com [me@example.com's Organization])
   Total managed accounts: 2
   ├ 5h:     38%   resets 04:19         in 3h 34m
   ├ 7d:     26%   resets Aug 20 22:59  in 5d 22h
@@ -419,7 +419,7 @@ Status: Account-2 (ceo@d-onworks.com [ceo@d-onworks.com's Organization])
 
 def test_parse_usage_는_cswap_실측_출력을_읽는다():
     got = settings.parse_usage(CSWAP_OUT)
-    assert got["account"] == "ceo@d-onworks.com"
+    assert got["account"] == "me@example.com"
     assert got["windows"] == [
         {"name": "5h", "pct": 38, "reset": "04:19", "left": "3h 34m"},
         {"name": "7d", "pct": 26, "reset": "Aug 20 22:59", "left": "5d 22h"},
