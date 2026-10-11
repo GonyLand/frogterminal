@@ -32,6 +32,9 @@ def boot_time() -> float | None:                     # 여기 두는 이유: 테
     `sysctl -n kern.boottime` 이 '{ sec = 1786764970, usec = 850840 } Sat Aug 15 12:36:10 2026'
     을 준다. 앞의 sec 만 쓴다 — 뒤 문자열은 로케일을 타지만 sec 는 안 탄다.
     """
+    if config.IS_WINDOWS:                            # psutil 이 부팅 시각(epoch)을 바로 준다
+        from bridge import winmux
+        return winmux.boot_time()
     try:
         out = subprocess.run(["sysctl", "-n", "kern.boottime"],
                              capture_output=True, text=True, timeout=5)
@@ -76,6 +79,10 @@ def _load_cards() -> list[dict]:
 
 
 def capture_pane(name: str) -> str:                  # Task 4 에서 사용 — 여기 두는 이유: monkeypatch 지점
+    if config.IS_WINDOWS:                            # 세션의 pyte 화면에서 보이는 글자만
+        from bridge import winmux
+        s = winmux.MUX.get(name)
+        return s.screen_text() if s is not None else ""
     try:
         out = subprocess.run(["tmux", "capture-pane", "-p", "-t", name],
                              capture_output=True, text=True, timeout=5)
@@ -390,6 +397,15 @@ _SID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 def _tmux(*args: str) -> None:
+    if config.IS_WINDOWS:                            # send-keys 인자를 글자로 옮겨 세션 입력에 넣는다
+        from bridge import winmux
+        if args[:2] == ("send-keys", "-t") and len(args) >= 4:
+            try:
+                winmux.send_keys(args[2], *args[3:])
+            except LookupError as e:
+                raise OSError(str(e)) from e         # 호출자가 OSError 를 '세션 없음'(404)으로 매핑한다
+            return
+        raise OSError(f"지원하지 않는 명령: {args[:1]}")
     subprocess.run(["tmux", *args], capture_output=True, timeout=5, check=True)
 
 

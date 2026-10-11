@@ -3,22 +3,29 @@
 보안 원칙: 127.0.0.1 전용 · fail-closed 인증 · Funnel이면 기동 거부 · 파일 브라우저 없음.
 """
 import asyncio
-import fcntl
 import json
 import logging
 import os
-import pty
+import re
 import signal
 import struct
 import subprocess
-import termios
+import sys
 import time
 from pathlib import Path
 
 from aiohttp import WSMsgType, web
 
+if sys.platform != "win32":                       # pty·tmux attach 는 POSIX 전용 — 윈도우는 winterm(ConPTY)
+    import fcntl
+    import pty
+    import termios
+
 from bridge import (agent_updates, browser_api, config, decisions, files, locate, preview_api, restore,
                     security, sessions, settings, uploads)
+
+if config.IS_WINDOWS:
+    from bridge import winterm
 
 log = logging.getLogger("frogterminal")
 
@@ -112,6 +119,11 @@ async def login_gate(request):
     return resp
 
 
+# 윈도우판 화면 문구 — 서버가 맥이 아니라 PC 이므로 "맥에 연결", "맥에서 열기" 같은 말만 바꾼다.
+# '맥박'·'맥락'·'맥락' 처럼 낱말 일부인 맥은 뒤 글자(조사·연결·기본·화면)로 가려 건드리지 않는다.
+_HOST_WORD = re.compile(r"맥(?=에서|에게|에|의|으로|이|을|은|도|과| 연결| 기본| 화면| 앞| 한 대| 쪽)")
+
+
 # 정적 파일 화이트리스트 — 경로 → (파일명, Content-Type)
 # ⚠️ add_static(디렉터리 통째 서빙) 절대 금지: web/ 안에 .env.local(OIDC 토큰)·.vercel/ 이 있다.
 # 여기 적힌 것만 나가고 나머지는 라우터가 404 를 낸다.
@@ -163,7 +175,10 @@ async def static_file(request):
     if not path.is_file():
         return web.Response(status=404)
     charset = None if ctype.startswith("image/") else "utf-8"   # PNG 에 charset 이 붙으면 안 된다
-    return web.Response(body=path.read_bytes(), content_type=ctype, charset=charset)
+    body = path.read_bytes()
+    if config.IS_WINDOWS and ctype in ("text/javascript", "text/html"):
+        body = _HOST_WORD.sub("PC", body.decode("utf-8")).encode("utf-8")   # 화면 문구의 '맥' → 'PC'
+    return web.Response(body=body, content_type=ctype, charset=charset)
 
 
 class OverviewCache:
@@ -444,7 +459,8 @@ def _hud_lines() -> list[str]:
     lines: list[str] = []
     if config.HUD_SCRIPT is not None and config.HUD_SCRIPT.is_file():
         try:
-            out = subprocess.run(["/usr/bin/python3", str(config.HUD_SCRIPT), "--accounts"],
+            out = subprocess.run([sys.executable if config.IS_WINDOWS else "/usr/bin/python3",
+                                  str(config.HUD_SCRIPT), "--accounts"],
                                  stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=5,
                                  env={k: v for k, v in os.environ.items() if k not in ("TMUX", "TMUX_PANE")})
             if out.returncode == 0 and out.stdout.strip() != "statusline error":
@@ -490,6 +506,24 @@ OPEN_APPS = {"default": [], "preview": ["-a", "Preview"],
              "chrome": ["-a", "Google Chrome"], "finder": ["-R"]}
 
 
+_WIN_EXECUTABLE_SUFFIXES = frozenset({
+    ".exe", ".com", ".bat", ".cmd", ".ps1", ".psm1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh",
+    ".msi", ".msp", ".scr", ".lnk", ".url", ".hta", ".reg", ".jar", ".cpl", ".dll", ".appref-ms"})
+
+
+def _open_on_windows(target, app: str) -> None:
+    """'이 PC 에서 열기' — default·preview·chrome 은 파일의 기본 앱, finder 는 탐색기에서 위치 선택.
+
+    explorer.exe 는 성공해도 종료코드 1 을 돌려주므로 코드는 보지 않는다. 경로는 인자 하나로만 넘긴다(셸 없음).
+    """
+    if app == "finder":
+        subprocess.Popen(["explorer.exe", f"/select,{target}"])
+    elif Path(str(target)).suffix.lower() in _WIN_EXECUTABLE_SUFFIXES:
+        raise OSError("실행 파일은 열지 않는다")      # startfile 은 .exe·.bat 를 '열기'가 아니라 '실행'한다
+    else:
+        os.startfile(str(target))                  # noqa: S606 — 검증된 경로(files.resolve_*)만 온다
+
+
 async def api_open(request):
     """파일 패널 우클릭 → 그 파일을 '맥에서' 연다(PDF·HTML·큰 이미지·SVG·HEIC에도 쓰는 길).
 
@@ -513,11 +547,14 @@ async def api_open(request):
     except files.NotAllowed:
         return web.json_response({"error": "NotAllowed"}, status=404)
     try:
-        out = await asyncio.to_thread(
-            lambda: subprocess.run(["open", *args, str(target)], capture_output=True, timeout=15))
+        if config.IS_WINDOWS:                      # 이 PC 의 기본 앱으로 연다 / 탐색기에서 위치 보기
+            await asyncio.to_thread(_open_on_windows, target, str(body.get("app", "default")))
+        else:
+            out = await asyncio.to_thread(
+                lambda: subprocess.run(["open", *args, str(target)], capture_output=True, timeout=15))
+            if out.returncode != 0:
+                return web.json_response({"error": "open failed"}, status=500)
     except (OSError, subprocess.SubprocessError):
-        return web.json_response({"error": "open failed"}, status=500)
-    if out.returncode != 0:
         return web.json_response({"error": "open failed"}, status=500)
     _audit(f"open user={request.headers.get('Tailscale-User-Login')} "     # 실제로 연 절대경로까지
            f"project={project!r} path={path!r} target={str(target)!r} "    # 남긴다(폴더 제한이 없으므로)
@@ -780,6 +817,13 @@ async def ws_terminal(request):
         rows = _clamp(int(request.query.get("rows", 24)))
     except ValueError:
         cols, rows = 80, 24
+    if config.IS_WINDOWS:                          # ConPTY 세션 구독 — 맥판의 pty+tmux attach 대신
+        try:
+            await winterm.serve(request, ws, name, agent, cols, rows,
+                                reconnect=request.query.get("re") == "1")
+        finally:
+            _audit(f"detach session={name}")
+        return ws
     master, slave = pty.openpty()
     _set_winsize(master, cols, rows)
     proc = await asyncio.create_subprocess_exec(
@@ -913,12 +957,21 @@ def create_app() -> web.Application:
     app.router.add_get("/api/uploads", api_uploads_usage)        # 캐시 용량
     app.router.add_post("/api/uploads/clear", api_uploads_clear)  # 캐시 비우기
     app.router.add_get("/ws/{name}", ws_terminal)
+    if config.IS_WINDOWS:                         # 브릿지가 끝나면 ConPTY 자식 트리도 함께 거둔다(고아 방지)
+        from bridge import winmux
+
+        async def _stop_sessions(_app):
+            await asyncio.to_thread(winmux.MUX.kill_all)
+        app.on_cleanup.append(_stop_sessions)
     preview_api.add_routes(app)                   # 브라우저 패널 1단계 — /api/preview/* (별도 모듈)
     browser_api.add_routes(app)                   # 브라우저 패널 2단계 — /api/browser/*, /ws/browser/* (CDP 크롬)
     return app
 
 
 def main() -> None:
+    if config.IS_WINDOWS and not sys.flags.utf8_mode:
+        # 윈도우 기본 인코딩(cp949)이면 감사로그·설정 JSON 의 한글/이모지가 깨지거나 쓰기에 실패한다 — UTF-8 모드로 다시 띄운다.
+        sys.exit(subprocess.call([sys.executable, "-X", "utf8", "-m", "bridge.server"]))
     logging.basicConfig(level=logging.INFO)
     security.assert_safe_to_start()                   # Funnel 게이트 — 확인 안 되면 안 뜬다
     sessions.clear_compact_all()                  # 지난 실행의 '여러 칸' 표시 — 보던 칸들이 다시 붙으며 새로 단다

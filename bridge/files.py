@@ -62,7 +62,7 @@ def resolve_openable(raw: str) -> Path:
     폰에서도 열리므로 프로젝트 폴더·비밀파일 제한을 그대로 유지한다 — 둘을 섞지 말 것.
     여는 것은 감사로그에 남긴다(server.api_open).
     """
-    if not raw.startswith("/") or "\x00" in raw:
+    if not (raw.startswith("/") or (config.IS_WINDOWS and Path(raw).is_absolute())) or "\x00" in raw:
         raise NotAllowed(raw)                # 상대경로·NUL 은 애초에 우리가 만든 값이 아니다
     path = Path(raw).resolve()               # 심링크는 진짜 목적지로
     if not path.exists():
@@ -97,8 +97,8 @@ def safe_path(project: str, rel: str) -> Path:
     # 푼 결과가 아래 parts 검사를 다시 타기 때문 — 방향이 fail-closed 라 안전한 쪽으로만 틀린다.
     # (safe_path 를 직접 부르는 테스트·호출자에게는 이 한 겹이 유일한 인코딩 방어이기도 하다.)
     rel = unquote(rel or "")
-    if rel.startswith("/"):
-        raise NotAllowed(rel)                # 절대경로는 조용히 relative化하지 않고 바로 차단
+    if rel.startswith(("/", "\\")) or Path(rel).anchor:
+        raise NotAllowed(rel)                # 절대경로(윈도우: 드라이브·UNC 포함)는 조용히 relative化하지 않고 바로 차단
     parts = Path(rel).parts
     if any(p == ".." or _denied(p) for p in parts):
         raise NotAllowed(rel)

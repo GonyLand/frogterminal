@@ -92,6 +92,14 @@ def validate_projects_root(raw) -> Path:
         raise InvalidProjectsRoot("not_found", "폴더가 존재하지 않습니다") from e
     if not resolved.is_dir():
         raise InvalidProjectsRoot("not_directory", "디렉터리가 아닙니다")
+    # bridge.json 의 defaultProjectsRoot 는 셸에서 사람이 정한 값이라 믿는다 — 그 폴더 자신과 안쪽은 홈 밖이어도
+    # 허용한다(윈도우: 작업 드라이브 Y:\ 같은 홈 밖 자리).
+    try:
+        under_default = resolved.is_relative_to(Path(config.DEFAULT_PROJECTS_ROOT).resolve(strict=True))
+    except OSError:
+        under_default = False
+    if under_default:
+        return resolved
     try:
         resolved.relative_to(HOME_DIR)
     except ValueError as e:
@@ -296,6 +304,8 @@ def manage_aliases(commands: dict[str, str], zshrc: Path | None = None):
     names = [name for name in commands.values() if name]
     if len(names) != len(set(names)):
         raise InvalidAlias(names[0], "클로드와 코덱스에는 서로 다른 별칭을 사용해야 합니다")
+    if config.IS_WINDOWS and zshrc is None:     # 윈도우판은 셸 설정 파일을 건드리지 않는다 — 별칭은 값으로만 저장
+        return None
     path = zshrc or ZSHRC_FILE
     existed = path.exists()
     original = path.read_bytes() if existed else b""
@@ -344,7 +354,8 @@ def launch_command(agent: str, session: str = "", cfg: dict | None = None,
     if AGENTS.get(agent) is None:
         return None
     cfg = cfg or load()
-    cmd = cfg["commands"].get(agent) or AGENTS[agent]
+    # 윈도우판은 별칭을 셸에 심지 않으므로(manage_aliases) 항상 실제 명령으로 띄운다.
+    cmd = AGENTS[agent] if config.IS_WINDOWS else (cfg["commands"].get(agent) or AGENTS[agent])
     if agent == "codex":
         # 코덱스의 전권한 = --yolo(= --dangerously-bypass-approvals-and-sandbox 의 별칭, 0.153 실측).
         # 클로드의 bypass 와 같은 스위치 하나로 간다 — "권한 확인 없이"라는 뜻이 둘 다 같다.

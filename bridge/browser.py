@@ -30,7 +30,17 @@ import aiohttp
 
 from . import config, sessions
 
-CHROME_BIN = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+def _find_chrome() -> str:
+    if not config.IS_WINDOWS:
+        return "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    import shutil
+    candidates = [Path(os.environ.get(var, "")) / rel
+                  for var in ("ProgramFiles", "ProgramFiles(x86)", "LocalAppData")
+                  for rel in (r"Google\Chrome\Application\chrome.exe",)]
+    return next((str(p) for p in candidates if p.is_file()), shutil.which("chrome") or str(candidates[0]))
+
+
+CHROME_BIN = _find_chrome()
 DEFAULT_W, DEFAULT_H = 1024, 700
 JPEG_QUALITY = 70
 BOOT_TIMEOUT_S = 15
@@ -90,18 +100,21 @@ def launch_chrome(project: str, w: int = DEFAULT_W, h: int = DEFAULT_H) -> tuple
     (prof / "DevToolsActivePort").unlink(missing_ok=True)      # 낡은 포트 파일 — 옛 포트에 붙는 사고 방지
     if not os.path.exists(CHROME_BIN):
         raise BrowserError("구글 크롬이 설치돼 있지 않습니다")
+    popen_kw = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW}
+                if config.IS_WINDOWS else {"start_new_session": True})
+    gpu_flag = "--use-angle=d3d11" if config.IS_WINDOWS else "--use-angle=metal"
     proc = subprocess.Popen(
         [CHROME_BIN, "--headless=new", "--remote-debugging-port=0", f"--user-data-dir={prof}",
          "--no-first-run", "--no-default-browser-check", "--disable-background-networking",
          # 디버깅 포트를 열면 navigator.webdriver 가 true 가 되고 구글이 그것만 보고 봇 확인(sorry)을 낸다(2026-09-20 실측:
          # 이 플래그 + 아래 UA 메타 보정으로 "네이버 - Google 검색" 정상). 속이는 게 아니라 '자동화 표식'만 끄는 것.
-         "--disable-blink-features=AutomationControlled", "--use-angle=metal", "--enable-unsafe-swiftshader",
+         "--disable-blink-features=AutomationControlled", gpu_flag, "--enable-unsafe-swiftshader",
          "--disable-extensions", "--disable-component-update", "--mute-audio", "--renderer-process-limit=4",
          # 스크린캐스트는 Emulation 의 deviceScaleFactor 를 무시한다(실측) — 실행 플래그로 배율 2 를 박아야 레티나에서
          # 선명한 2배 프레임이 온다. 배율 1 뷰어(윈도우 등)에는 캐스트 maxWidth 를 CSS 폭으로 주면 크롬이 줄여서 보낸다.
          "--force-device-scale-factor=2",
          f"--window-size={w},{h}", "--lang=ko-KR", "--hide-scrollbars=false", "about:blank"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **popen_kw)
     t0 = time.time()
     while not (prof / "DevToolsActivePort").exists():
         if proc.poll() is not None:
@@ -118,6 +131,9 @@ def launch_chrome(project: str, w: int = DEFAULT_W, h: int = DEFAULT_H) -> tuple
 
 def _alive(pid) -> bool:
     try:
+        if config.IS_WINDOWS:                    # 윈도우의 os.kill(pid, 0)은 CTRL_C_EVENT 를 보낸다 — 존재만 본다
+            import psutil
+            return psutil.pid_exists(int(pid))
         os.kill(int(pid), 0)
         return True
     except (OSError, TypeError, ValueError):
@@ -139,6 +155,18 @@ def stop_chrome(project: str) -> bool:
     save_registry(reg)
     if not entry:
         return False
+    if config.IS_WINDOWS:                                # 크롬 프로세스 트리를 통째로 끝낸다
+        import psutil
+        try:
+            root = psutil.Process(int(entry["pid"]))
+            for p in root.children(recursive=True) + [root]:
+                try:
+                    p.kill()
+                except psutil.Error:
+                    pass
+        except (psutil.Error, ValueError, TypeError):
+            pass
+        return True
     try:
         os.killpg(int(entry["pid"]), signal.SIGTERM)     # start_new_session 으로 띄웠으니 그룹째
     except (OSError, ValueError, TypeError):

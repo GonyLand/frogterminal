@@ -76,6 +76,33 @@ def parse_lsof_cwd(text: str) -> str | None:
     return None
 
 
+def _listen_win() -> list[dict]:
+    """윈도우: lsof 대신 psutil 로 127.0.0.1 LISTEN 소켓과 소유 프로세스 이름을 모은다."""
+    import psutil
+    found = []
+    try:
+        conns = psutil.net_connections(kind="tcp")
+    except (psutil.Error, OSError):
+        return []
+    for c in conns:
+        if c.status != psutil.CONN_LISTEN or not c.pid or not c.laddr or c.laddr.ip != "127.0.0.1":
+            continue
+        try:
+            cmd = psutil.Process(c.pid).name()
+        except psutil.Error:
+            cmd = ""
+        found.append({"pid": c.pid, "cmd": cmd, "port": c.laddr.port})
+    return found
+
+
+def _cwd_win(pid: int) -> str | None:
+    import psutil
+    try:
+        return psutil.Process(pid).cwd()
+    except (psutil.Error, OSError):
+        return None
+
+
 PROBE_TIMEOUT_S = 0.5
 
 
@@ -101,15 +128,16 @@ def list_services(root: Path | None = None, probe=None) -> list[dict]:
     """
     root = root if root is not None else config.projects_root()
     probe = probe if probe is not None else http_status
-    listen = parse_lsof_listen(_lsof(["-i4TCP@127.0.0.1", "-sTCP:LISTEN"]))
-    from . import browser                            # 2단계 크롬의 CDP 포트 — 절대 내주지 않는다(원격 디버깅 노출)
+    listen = _listen_win() if config.IS_WINDOWS else parse_lsof_listen(_lsof(["-i4TCP@127.0.0.1", "-sTCP:LISTEN"]))
+    from . import browser                           # 2단계 크롬의 CDP 포트 — 절대 내주지 않는다(원격 디버깅 노출)
     reserved = RESERVED | browser.registry_ports()
     seen, out = set(), []
     for s in listen:
         if s["port"] in reserved or s["port"] in BAD_PORTS or s["port"] in seen:
             continue
         seen.add(s["port"])
-        cwd = parse_lsof_cwd(_lsof(["-p", str(s["pid"]), "-d", "cwd"])) or ""
+        cwd = (_cwd_win(s["pid"]) if config.IS_WINDOWS
+               else parse_lsof_cwd(_lsof(["-p", str(s["pid"]), "-d", "cwd"]))) or ""
         project = None
         try:
             rel = Path(cwd).resolve().relative_to(root.resolve())

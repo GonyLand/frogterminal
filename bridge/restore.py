@@ -97,11 +97,16 @@ def restore_all() -> dict:
         if not sessions.is_valid_session(name):  # 폴더가 사라진 이름 — 되살릴 자리가 없다
             failed.append(name)
             continue
-        cmd = sessions.attach_cmd(name, agent=agent)
         # ["tmux", "new-session", …] 사이에 -d 를 끼운다: -A 는 있으면 붙고 없으면 만드는데,
         # -d 가 '붙지는 마라'를 더한다. 브릿지는 지금 이 세션에 붙을 화면이 없다.
         try:
-            _create_detached(cmd[:2] + ["-d"] + cmd[2:])
+            if config.IS_WINDOWS:                # 붙는 쪽이 없어도 세션 표에 만들어 둔다 — 나중에 붙으면 그 크기로 맞춘다
+                from bridge import winmux
+                argv, cwd = sessions.win_launch(name, agent=agent)
+                winmux.MUX.get_or_create(name, argv, cwd, 120, 32)
+            else:
+                cmd = sessions.attach_cmd(name, agent=agent)
+                _create_detached(cmd[:2] + ["-d"] + cmd[2:])
         except (OSError, subprocess.SubprocessError):
             failed.append(name)
             continue

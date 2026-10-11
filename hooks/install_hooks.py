@@ -18,13 +18,19 @@ import sys
 EVENTS = ["Notification", "Stop", "UserPromptSubmit", "SessionEnd",
           "PreCompact", "SessionStart"]
 DEFAULT_SETTINGS = os.path.expanduser("~/.claude/settings.json")
-DEFAULT_CMD = "python3 " + os.path.join(os.path.dirname(os.path.abspath(__file__)), "frog_hook.py")
+_HOOK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frog_hook.py")
+if sys.platform == "win32":
+    # 윈도우: 클로드는 훅 명령을 bash 로 실행하므로 역슬래시가 사라진다 → 슬래시 경로 + 따옴표.
+    # 브릿지 가상환경의 python 으로 돌려야 psutil 이 있다(이 스크립트를 그 python 으로 돌렸을 때 sys.executable).
+    DEFAULT_CMD = f'"{sys.executable.replace(chr(92), "/")}" "{_HOOK_FILE.replace(chr(92), "/")}"'
+else:
+    DEFAULT_CMD = "python3 " + _HOOK_FILE
 
 
 def _load(settings_path: str) -> dict:
     if not os.path.exists(settings_path):
         return {}
-    with open(settings_path) as f:
+    with open(settings_path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -35,7 +41,7 @@ def _write(settings_path: str, data: dict) -> None:
             shutil.copy2(settings_path, backup)
     os.makedirs(os.path.dirname(settings_path), exist_ok=True)
     tmp = settings_path + ".tmp"
-    with open(tmp, "w") as f:
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     os.replace(tmp, settings_path)
 

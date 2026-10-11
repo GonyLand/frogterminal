@@ -25,8 +25,18 @@ def configured_root(settings_file=APP_SETTINGS, home=None):
     """
     home = os.path.realpath(home or os.path.expanduser("~"))
     fallback = os.path.join(home, "projects")      # bridge.config.DEFAULT_PROJECTS_ROOT 의 기본과 같다
+    # bridge.json 의 defaultProjectsRoot(셸에서 사람이 정한 값)가 있으면 그것이 기본 루트다 — 윈도우의 Y:\ 처럼 홈 밖일 수 있다.
+    default_root = None
     try:
-        with open(settings_file) as f:
+        with open(os.path.join(home, ".frogterminal", "bridge.json"), encoding="utf-8") as f:
+            cfg_root = json.load(f).get("defaultProjectsRoot")
+        if isinstance(cfg_root, str) and cfg_root.strip():
+            default_root = os.path.realpath(os.path.expanduser(cfg_root))
+            fallback = default_root
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
+        with open(settings_file, encoding="utf-8") as f:
             raw = json.load(f).get("projectsRoot")
         if not isinstance(raw, str) or not raw.strip():
             return fallback
@@ -35,6 +45,8 @@ def configured_root(settings_file=APP_SETTINGS, home=None):
         if not os.path.isabs(raw) or not os.path.isdir(raw):
             return fallback
         resolved = os.path.realpath(raw)
+        if default_root and (resolved == default_root or os.path.commonpath((default_root, resolved)) == default_root):
+            return resolved
         if resolved == home or os.path.commonpath((home, resolved)) != home:
             return fallback
         return resolved
@@ -106,6 +118,25 @@ def owner_process(table: dict, start_pid: int) -> tuple:
     return None, None
 
 
+def owner_of_this_hook_win() -> tuple:
+    """윈도우: psutil 로 조상을 거슬러 올라가 클로드를 찾는다. 시작시각은 브릿지(winmux.format_start)와 같은
+    '%Y-%m-%dT%H:%M:%S'(로컬) — 로케일을 타지 않는다. psutil 이 없거나 실패하면 (None, None)."""
+    try:
+        import psutil
+        import time
+        proc = psutil.Process(os.getpid())
+        for _ in range(10):
+            if is_claude(proc.name()):
+                return proc.pid, time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(proc.create_time()))
+            parent = proc.parent()
+            if parent is None:
+                return None, None
+            proc = parent
+    except Exception:
+        pass
+    return None, None
+
+
 def owner_of_this_hook() -> tuple:
     """실패는 전부 (None, None) — 카드에 pid 가 없으면 브릿지가 예전 기준으로 판정한다.
 
@@ -113,6 +144,8 @@ def owner_of_this_hook() -> tuple:
     "2026년 8월 15일 토요일 10시 11분 24초"(7토막)로 나와 5토막 파싱이 잘리고 영어 환경의
     브릿지와 문자열이 절대 안 맞아, 살아있는 세션이 '꺼짐'으로 판정된 실사고(2026-08-15)가 있다.
     """
+    if sys.platform == "win32":
+        return owner_of_this_hook_win()
     try:
         out = subprocess.run(["ps", "-eo", "pid=,ppid=,lstart=,comm="],
                              capture_output=True, text=True, timeout=5,
@@ -153,7 +186,7 @@ def notification_kind(ntype: str, message: str) -> str:
 def prior_card(path: str) -> dict:
     """지금 놓여 있는 카드 — SessionStart 가 '방금 압축이 자동이었나'를 알아보는 유일한 단서."""
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             card = json.load(f)
         return card if isinstance(card, dict) else {}
     except (OSError, ValueError):
@@ -161,7 +194,8 @@ def prior_card(path: str) -> dict:
 
 
 def main() -> None:
-    data = json.load(sys.stdin)
+    # 클로드는 UTF-8 JSON 을 stdin 으로 준다 — 윈도우의 기본 인코딩(cp949)으로 읽으면 한글이 깨진다.
+    data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))
     event = data.get("hook_event_name", "")
     sid = str(data.get("session_id") or "")
     if not SID_RE.match(sid):
@@ -206,7 +240,8 @@ def main() -> None:
         # 이 클로드가 tmux 안에서 도는가 — TMUX 환경변수는 tmux 안에서 시작된 프로세스에만 있고,
         # 훅은 클로드의 자식이라 그대로 물려받는다. 프로그터미널의 세션 = tmux 세션이므로,
         # 브릿지는 이 값으로 "프로그터미널이 연 세션의 결재만" 올린다(Zed·iTerm 세션 제외).
-        "inTmux": bool(os.environ.get("TMUX")),
+        # 윈도우판 세션은 tmux 가 아니라 브릿지의 ConPTY 라서 FROGTERMINAL_SESSION(winmux 가 자식에 심는다)으로 본다.
+        "inTmux": bool(os.environ.get("TMUX") or os.environ.get("FROGTERMINAL_SESSION")),
         "updatedAt": datetime.now(KST).isoformat(),
     }
     pid, started = owner_of_this_hook()          # 이 카드의 주인 = 살아있음 판정의 근거
@@ -214,7 +249,7 @@ def main() -> None:
         card["pid"], card["pidStart"] = pid, started
     os.makedirs(STATE_DIR, exist_ok=True)
     tmp = path + ".tmp"
-    with open(tmp, "w") as f:
+    with open(tmp, "w", encoding="utf-8") as f:     # 브릿지는 UTF-8 로 읽는다 — 윈도우 기본(cp949)으로 쓰면 한글이 깨진다
         json.dump(card, f, ensure_ascii=False)
     os.replace(tmp, path)                     # 원자적 — 브릿지가 반쪽 JSON 을 읽지 않게
 

@@ -13,6 +13,9 @@ from pathlib import Path
 from bridge import config, settings
 from bridge.config import IGNORED_FOLDERS, MONITOR_SESSION
 
+if config.IS_WINDOWS:                            # 윈도우판은 tmux 대신 브릿지 안의 ConPTY 세션 표를 쓴다
+    from bridge import winmux
+
 # \w(유니코드) — 이 맥의 프로젝트 폴더에는 한글 이름이 실재한다('보고서양식-시안' 등).
 # 영문만 허용하던 옛 규칙은 한글 폴더의 숨기기·터미널 열기를 전부 400/404 로 막았다(실측).
 # 막는 것은 그대로 막힌다: 경로 구분자(/), 공백, 개행·제어문자, 선행 점(숨김·상대경로).
@@ -98,6 +101,8 @@ def is_project_folder(name: str, root: Path | None = None) -> bool:
 
 
 def list_tmux_sessions() -> list[str]:
+    if config.IS_WINDOWS:
+        return winmux.MUX.names()
     try:
         out = subprocess.run(
             ["tmux", "list-sessions", "-F", "#{session_name}"],
@@ -118,6 +123,13 @@ def session_agents() -> dict[str, str]:
     표시하고 나머지는 없는 것으로 둔다(클로드가 기본 그림이라 별도 표시가 필요 없다). 탭(base@N)은
     자기 줄이 없으므로 기본 세션의 pane 만 본다. 실패하면 빈 dict(=색 없음) — 목록 자체는 안 막는다.
     """
+    if config.IS_WINDOWS:                        # 세션의 자식 프로세스 트리에서 codex 를 찾는다
+        found = {}
+        for n in winmux.MUX.names():
+            s = winmux.MUX.get(n)
+            if s is not None and s.agent() == "codex":
+                found[n] = "codex"
+        return found
     try:
         out = subprocess.run(
             ["tmux", "list-panes", "-a", "-F", "#{session_name}\t#{pane_current_command}"],
@@ -147,6 +159,8 @@ def process_starts() -> dict[int, str] | None:
     "2026년 8월 15일 토요일 10시…"를 적고 영어 환경의 브릿지는 "Sat Aug 15 …"를 읽어,
     살아있는 세션이 전부 '꺼짐'으로 판정된 실사고(2026-08-15)가 있다. 양쪽 다 C 로 못박는다.
     """
+    if config.IS_WINDOWS:                        # psutil 의 create_time — 훅도 같은 포맷(winmux.format_start)으로 적는다
+        return winmux.process_starts()
     try:
         out = subprocess.run(["ps", "-eo", "pid=,lstart="],
                              capture_output=True, text=True, timeout=5,
@@ -242,6 +256,10 @@ def set_compact(name: str, on: bool) -> None:
     좁은 칸마다 계정 사용량 4줄이 반복되던 것을 웹 하단 한 세트로 모은다. 세션 옵션(-g 아님)이라
     다른 세션·프로그터미널 밖 터미널은 영향이 없다. 실패는 조용히 삼킨다(HUD 가 길게 남을 뿐이다).
     """
+    if config.IS_WINDOWS:
+        if (s := winmux.MUX.get(name)) is not None:
+            s.compact = on
+        return
     args = ["tmux", "set-option", "-q", "-t", name]
     args += [COMPACT_OPT, "1"] if on else ["-u", COMPACT_OPT]
     try:
@@ -264,6 +282,8 @@ def leave_copy_mode(name: str) -> None:
     if-shell -F 로 tmux 안에서 판단·실행하므로(서버 왕복 1회) 모드 밖에서 Esc 같은 잉여 키가
     앱으로 새지 않는다(Esc 는 클로드의 작업 중단 키라 함부로 못 보낸다). 실패는 조용히 삼킨다.
     """
+    if config.IS_WINDOWS:                        # 복사 모드가 없다 — 스크롤백은 브라우저 xterm 이 들고 있다
+        return
     try:
         subprocess.run(["tmux", "if-shell", "-F", "-t", name, "#{pane_in_mode}",
                         f"send-keys -t {shlex.quote(name)} -X cancel"],
@@ -273,6 +293,9 @@ def leave_copy_mode(name: str) -> None:
 
 
 def _kill_tmux(name: str) -> None:                   # 여기 두는 이유: 테스트 monkeypatch 지점
+    if config.IS_WINDOWS:
+        winmux.MUX.kill(name)
+        return
     subprocess.run(["tmux", "kill-session", "-t", name],
                    capture_output=True, timeout=5, check=True)
 
@@ -308,6 +331,8 @@ def copy_buffer() -> str:
     복사물이 폰이 아니라 맥으로 가 버려 붙여넣기가 영영 안 됐다(2026-08-15 실사고).
     그래서 브라우저가 이 버퍼를 읽어 자기 클립보드에도 넣는다.
     """
+    if config.IS_WINDOWS:                        # 복사 버퍼가 없다 — 드래그 선택은 브라우저(xterm)가 직접 복사한다
+        return ""
     try:
         out = subprocess.run(["tmux", "show-buffer"], capture_output=True, text=True, timeout=5)
     except (OSError, subprocess.SubprocessError):
@@ -469,3 +494,30 @@ def attach_cmd(name: str, root: Path | None = None, agent: str = "shell") -> lis
     # 세 번째로 반복할 뿐이고(디자이너 지적), 파란 기본색이 팔레트 밖이다. 그 세션만 끈다.
     # pane-border-status 도 함께 — ~/.tmux.conf 가 pane 상단에 이름표를 또 그린다(-w = 창 옵션).
     return cmd + _session_opts(name)
+
+
+def win_shell() -> str:
+    """윈도우 세션의 셸. pwsh(7)가 있어야 `a || b` 가 되므로 우선하고, 없으면 윈도우 PowerShell."""
+    import shutil
+    return shutil.which("pwsh") or shutil.which("powershell") or "powershell.exe"
+
+
+def win_launch(name: str, root: Path | None = None, agent: str = "shell") -> tuple[list[str], str | None]:
+    """윈도우판 attach_cmd — (argv, 시작 폴더). 에이전트가 끝나면 세션도 끝난다(맥판과 같은 약속).
+
+    셸은 pwsh 다. 프로파일을 그대로 타서 PATH·별칭이 평소 터미널과 같다. 설정한 에이전트는 `-Command`
+    한 줄(settings.launch_command — `claude … --continue || claude …`)로 곧바로 띄운다.
+    """
+    import sys
+    root = root if root is not None else config.projects_root()
+    shell = win_shell()
+    if name == MONITOR_SESSION:                      # CPU 팝업 — htop 자리. q 로 끝내면 세션도 닫힌다
+        monitor = Path(__file__).with_name("monitor_win.py")
+        return [shell, "-NoLogo", "-NoProfile", "-Command",
+                f"& '{sys.executable}' '{monitor}'"], None
+    base = base_of(name)                             # 탭(base@N)도 그 프로젝트 폴더에서 시작한다
+    work = project_dir(root, base)
+    argv = [shell, "-NoLogo"]
+    if launch := settings.launch_command(agent, session=name, cwd=work):
+        argv += ["-Command", launch]
+    return argv, (str(work) if work else None)

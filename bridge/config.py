@@ -13,13 +13,15 @@ import sys
 from datetime import timedelta, timezone
 from pathlib import Path
 
+IS_WINDOWS = sys.platform == "win32"         # 윈도우판: tmux 대신 ConPTY(bridge/winmux.py), 셸은 pwsh
 PORT = 7788
 BIND_HOST = "127.0.0.1"                      # 절대 0.0.0.0 금지
 WEB_DIR = Path(__file__).parent.parent / "web"   # 프론트를 같은 출처에서 서빙 (LNA 차단 회피)
 APP_DIR = Path.home() / ".frogterminal"           # 앱 설정·브릿지 설정·토큰이 사는 고정 자리
 BRIDGE_CONFIG_FILE = APP_DIR / "bridge.json"
 TOKEN_FILE = APP_DIR / "token"                        # 자체 인증 토큰(0600). 없으면 첫 기동 때 만든다
-_DEFAULT_TAILSCALE_BIN = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"  # PATH에 없음 — 절대경로 필수
+_DEFAULT_TAILSCALE_BIN = (r"C:\Program Files\Tailscale\tailscale.exe" if IS_WINDOWS
+                          else "/Applications/Tailscale.app/Contents/MacOS/Tailscale")  # PATH에 없을 수 있다 — 절대경로 필수
 
 
 def load_bridge_config(path: Path = BRIDGE_CONFIG_FILE) -> dict:
@@ -102,6 +104,8 @@ def encode_cwd(cwd: str) -> str:
     (상수 파일에 함수가 하나 있는 이유: 이건 '클로드가 대화 파일을 어디 두나'라는 규칙이라
      TRANSCRIPT_ROOT 바로 옆이 제자리다. decisions·settings 두 곳이 같은 규칙을 쓴다.)
     """
+    if IS_WINDOWS:                    # 윈도우: Y:\gony_land → Y--gony-land (영숫자 밖은 전부 '-')
+        return "".join(c if (c.isascii() and c.isalnum()) else "-" for c in cwd)
     return cwd.replace("/", "-").replace(".", "-")
 TRANSCRIPT_TAIL_BYTES = 1024 * 1024          # 꼬리만 읽는다 — 실측 165MB 파일이 존재한다.
                                              # 살아있는 카드 9장의 '마지막 사용자 발화까지 거리'를 재니

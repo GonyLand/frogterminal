@@ -19,6 +19,12 @@ PNG = b"\x89PNG\r\n\x1a\n" + b"server-image"
 
 @pytest.fixture
 def tmux_session():
+    if config.IS_WINDOWS:          # 윈도우판의 '세션' = winmux 의 ConPTY 세션 — 같은 이름 규약으로 하나 만든다
+        from bridge import winmux
+        winmux.MUX.create(TEST_SESSION, ["cmd.exe", "/q", "/k"], None, 80, 24)
+        yield TEST_SESSION
+        winmux.MUX.kill(TEST_SESSION)
+        return
     subprocess.run(["tmux", "new-session", "-d", "-s", TEST_SESSION], check=True)
     yield TEST_SESSION
     subprocess.run(["tmux", "kill-session", "-t", TEST_SESSION], check=False)
@@ -42,6 +48,12 @@ async def wait_until_attached(name: str) -> None:
 def dying_session():
     """테스트 도중 죽여도 되는 전용 세션 — 다른 테스트·다른 세션과 절대 겹치지 않는다."""
     name = f"frogtest-die-{uuid.uuid4().hex[:6]}"
+    if config.IS_WINDOWS:
+        from bridge import winmux
+        winmux.MUX.create(name, ["cmd.exe", "/q", "/k"], None, 80, 24)
+        yield name
+        winmux.MUX.kill(name)
+        return
     subprocess.run(["tmux", "new-session", "-d", "-s", name], check=True)
     yield name
     subprocess.run(["tmux", "kill-session", "-t", name], check=False)
