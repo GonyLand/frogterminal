@@ -41,8 +41,10 @@ def _write(settings_path: str, data: dict) -> None:
             shutil.copy2(settings_path, backup)
     os.makedirs(os.path.dirname(settings_path), exist_ok=True)
     tmp = settings_path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    # newline="\n" — 윈도우 텍스트 모드는 줄끝을 CRLF 로 바꿔 사용자가 LF 로 맞춰 둔 settings.json 전체가 diff 가 된다.
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
     os.replace(tmp, settings_path)
 
 

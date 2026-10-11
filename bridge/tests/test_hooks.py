@@ -268,6 +268,17 @@ def test_install_hooks_백업은_처음_한번만(tmp_path):
     assert (tmp_path / "settings.json.bak").read_text() == 원본                   # 첫 백업 유지
 
 
+def test_install_hooks_줄끝은_LF_로_쓴다(tmp_path):
+    """윈도우 텍스트 모드는 CRLF 로 바꿔, 사용자가 LF 로 맞춰 둔 settings.json 전체가 diff 가 된다(2026-10-12 실측)."""
+    sys.path.insert(0, str(HOOK.parent))
+    import install_hooks
+    settings = tmp_path / "settings.json"
+    settings.write_bytes(json.dumps({"model": "opus"}, indent=2).encode() + b"\n")
+    assert install_hooks.install(str(settings), "python3 /x/frog_hook.py") is True
+    raw = settings.read_bytes()
+    assert b"\r" not in raw and raw.endswith(b"\n")
+
+
 def test_install_hooks_멱등_및_기존설정_보존(tmp_path):
     sys.path.insert(0, str(HOOK.parent))
     import install_hooks
