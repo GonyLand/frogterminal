@@ -170,4 +170,6 @@ python3 docs/demo/build_demo.py                 # web/index.html → docs/demo/i
 
 ## Who made it
 
-frogterminal is made by [Autofrog](https://autofrog.kr) and owned by [d-onworks](https://github.com/d-onworks). It was built by a one-person company running several AI agents at once, so that nobody has to sit in front of the Mac. MIT licensed. The frog character belongs to Autofrog and is not covered by the code license.
+frogterminal is made by [Autofrog](https://autofrog.kr) and owned by [d-onworks](https://github.com/d-onworks). Autofrog's founder built it alone, for his own way of working: a one-person company running several AI agents at once, so that nobody has to sit in front of the Mac. MIT licensed. The frog character belongs to Autofrog and is not covered by the code license.
+
+**Disclaimer.** This is a personal tool published as-is. Because it is a remote shell, a wrong setting can expose your whole Mac to others. Decisions about installing, configuring and exposing it, and their consequences (data loss, costs, security incidents and so on), are entirely the user's responsibility. Autofrog and d-onworks give no warranty and accept no liability for problems arising from its use (the same as the "AS IS" clause of the MIT license).
