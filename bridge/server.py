@@ -275,7 +275,11 @@ async def api_sessions(request):
         st = states.get(s["name"])
         s["status"] = st["status"] if st else ("on" if s["alive"] else "off")
         s["pending"] = st["pending"] if st else 0
-    return web.json_response({"sessions": items, "restorable": restorable})
+    body = {"sessions": items, "restorable": restorable}
+    if config.IS_WINDOWS:                          # 탭(base@N)까지 이름별로 — 붙은 화면 수(frog 의 빈 번호·이어 붙기 판단)
+        from bridge import winmux
+        body["live"] = await asyncio.to_thread(winmux.MUX.live)
+    return web.json_response(body)
 
 
 async def api_decisions(request):
@@ -804,6 +808,12 @@ async def ws_terminal(request):
             await ws.close(code=WS_KILLED, message=b"killed")
             return ws
         killed.discard(name)                       # 직접 연 것(또는 이미 다시 살아 있다) — 기억을 지운다
+
+    # ?new=1 — frog 가 '새 창' 으로 고른 번호. 그새 다른 창이 그 번호를 먼저 열었으면 붙지 않고 409 → frog 가 다음 번호로.
+    if config.IS_WINDOWS and request.query.get("new") == "1":
+        from bridge import winmux
+        if winmux.MUX.get(name) is not None:
+            return web.json_response({"error": "session exists"}, status=409)
 
     ws = web.WebSocketResponse(heartbeat=30)
     await ws.prepare(request)

@@ -414,6 +414,16 @@ class Mux:
         with self._lock:
             return [n for n, s in self._sessions.items() if s.alive]
 
+    def live(self) -> dict[str, dict]:
+        """살아 있는 세션마다 붙은 화면 수와 만든 시각 — frog 가 빈 번호·아무도 안 보는 세션을 고를 때 쓴다."""
+        with self._lock:
+            alive = [s for s in self._sessions.values() if s.alive]
+        out = {}
+        for s in alive:
+            with s.lock:
+                out[s.name] = {"clients": len(s.subscribers), "created": s.created}
+        return out
+
     def get(self, name: str) -> Session | None:
         with self._lock:
             s = self._sessions.get(name)
