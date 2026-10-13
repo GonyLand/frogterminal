@@ -71,6 +71,14 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
   <input id="proj-filter" type="search" placeholder="프로젝트 검색" autocomplete="off" spellcheck="false">
   <p id="conn-hint" hidden></p>               <!-- 연결 안내·끄기/숨김 실패 한 줄 — alert() 대신 -->
   <p id="proj-empty" hidden>일치하는 프로젝트 없음</p>
+  <!-- PC 에서 이미 떠 있는 클로드 창(frog 로 연 게 아닌 것) — ext.js 가 7초마다 /api/ext 로 채운다. 0개면 통째로 숨는다 -->
+  <section id="ext-box" hidden>
+    <button id="ext-toggle" aria-expanded="true">PC 클로드 창 –</button>
+    <div id="push-row" hidden>                   <!-- 결재 대기·완료 웹푸시 — push.js 가 지원하는 브라우저에서만 보인다 -->
+      <button id="push-toggle">🔕 알림 켜기</button><button id="push-test" hidden>시험</button><span id="push-msg"></span>
+    </div>
+    <ul id="ext-list"></ul>
+  </section>
   <ul id="sessions"></ul>
   <div id="hidden-bar" hidden>                <!-- 숨긴 항목 — 0개면 바 자체가 사라진다 -->
     <button id="hidden-toggle">숨긴 항목</button>
@@ -200,6 +208,23 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
   <div id="cpu-term"></div>
 </div>
 
+<!-- PC 클로드 창 보기 — 남의 창이라 크기는 서버가 알려 준 cols×rows 로 고정이고, 입력은 '입력 켜기'를 눌러야 들어간다 -->
+<div id="ext-pop" hidden>
+  <header>
+    <b id="ext-name">–</b><span id="ext-state"></span>
+    <button id="ext-input" aria-pressed="false" title="켜면 이 화면의 키가 PC 창에 그대로 들어간다">입력 잠김</button>
+    <button id="ext-close">✕</button>
+  </header>
+  <div id="ext-scroll"><div id="ext-term"></div></div>
+  <div id="ext-keys">
+    <button data-k="\x1b">Esc</button><button data-k="\t">Tab</button>
+    <button data-k="\x1b[A">↑</button><button data-k="\x1b[B">↓</button>
+    <button data-k="\x1b[D">←</button><button data-k="\x1b[C">→</button>
+    <button data-k="\r">Enter</button><button data-k="\x03">^C</button>
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+  </div>
+</div>
+
 <footer id="statusbar">
   <span id="sb-conn">○ 연결 확인 중…</span>
   <span id="sb-counts"></span>
@@ -228,5 +253,7 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
 <script src="browser.js"></script>  <!-- split.js·files.js 다음 — 분할 상수·fpGo·fpClose 를 쓴다 -->
 <script src="remote.js"></script>   <!-- browser.js 다음 — 브라우저 모드(원격 크롬 뷰어) -->
 <script src="grid.js"></script>     <!-- 맨 끝 — 파일·브라우저 패널 함수(fpClose·bpClose)를 쓴다 -->
+<script src="ext.js"></script>      <!-- PC 클로드 창 목록·보기 — termOptions(settings.js)를 쓴다 -->
+<script src="push.js"></script>     <!-- 결재·완료 알림(웹푸시) 켜기 — #push-row 는 ext-box 안 -->
 </body>
 </html>

@@ -94,6 +94,16 @@ frog -l               # 살아 있는 세션 목록(붙은 화면 수 · 시작 
 - 설치: `scripts\windows\frog.cmd` 를 PATH 의 폴더에 두거나(절대경로로 고쳐 복사), `function frog { & 'Y:\...\scripts\windows\frog.cmd' @args }` 를 프로필에.
 - 이미 떠 있는 창의 대화를 옮기려면 그 창을 닫고 `frog` 로 열어 `/resume` 한다.
 
+## 폰에서 PC 의 클로드 창 보기 · 결재/완료 알림
+
+`frog` 로 연 게 아니라 Windows Terminal·VS Code 에 이미 떠 있는 클로드 창도 폰 목록 위쪽(**PC 클로드 창**)에 작업중·결재·완료로 나온다(위 「결재 인박스」 훅이 필요).
+창을 누르면 그 창의 화면이 뜬다 — 크기는 PC 창 것으로 고정이고, 글자 입력은 **입력 켜기** 를 눌러야 들어간다(기본은 잠금). 목록에 있는 창에만 붙는다.
+색은 16색표로 내려오고(24비트 색 손실) 보이는 영역만 온다(스크롤백 없음).
+
+**알림**: 같은 칸의 **🔕 알림 켜기** 를 폰에서 한 번 누르고 허용하면, 창이 결재를 기다리거나 끝날 때(전부 끝나면 한 통) 화면이 꺼져 있어도 웹푸시가 온다. **시험** 으로 바로 확인.
+HTTPS(테일넷 serve)에서만 켤 수 있다. 구독은 `~/.frogterminal/push-subs.json`, 서명 키는 `vapid.pem`(지우면 구독이 모두 무효 — 폰에서 끄고 다시 켠다).
+푸시 서비스 호출은 윈도우 인증서 저장소를 믿는다 — Avast 등 HTTPS 검사 프로그램이 있으면 파이썬 기본 번들(certifi)은 `CERTIFICATE_VERIFY_FAILED` 로 막힌다.
+
 ## 운영
 
 - 로그: `~/.frogterminal/bridge.log` · 재시작: `pwsh -File scripts\windows\restart.ps1`(안의 세션도 끝난다) · 내리기: `... restart.ps1 -Stop`

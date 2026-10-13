@@ -794,3 +794,48 @@ button#fp-close:hover { color: var(--t1); }
   .inbox-card .send-btn, .inbox-card .open-btn,
   #fp-edit, #fp-save, #fp-cancel, #fp-view-close { min-height: 32px; padding-top: 5px; padding-bottom: 5px; }
 }
+
+/* ── PC 클로드 창(ext.js) — frog 가 아닌, PC 에 이미 떠 있는 창의 목록과 보기 ─────────────────────── */
+#ext-box { margin: 0 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--deep); overflow: hidden; }
+#ext-box[hidden] { display: none; }
+#ext-toggle { width: 100%; text-align: left; background: var(--navy); border: 0; border-bottom: 1px solid var(--line);
+  color: var(--t2); font-size: 13px; padding: 8px 12px; min-height: 36px; }
+#ext-toggle.hot { color: var(--amber); font-weight: 700; }
+#ext-list { list-style: none; margin: 0; padding: 0; }
+#ext-list[hidden] { display: none; }
+#ext-list li { display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-top: 1px solid var(--line); cursor: pointer; min-height: 44px; }
+#ext-list li:first-child { border-top: 0; }
+#ext-list li:hover { background: var(--navy); }
+#ext-list .xdot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--green); font-style: normal; }
+#ext-list .xdot.working { background: var(--blue); animation: frog-pulse 2.4s ease-in-out infinite; }
+#ext-list .xdot.waiting { background: var(--amber); animation: frog-pulse 1.6s ease-in-out infinite; }
+#ext-list .xbody { min-width: 0; flex: 1; }
+#ext-list .xhead { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+#ext-list .xhead b { color: var(--t1); font-size: 14px; }
+#ext-list small { display: block; color: var(--t3); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ext-box .st.waiting, #ext-pop .st.waiting { color: var(--amber); font-weight: 700; }
+#ext-box .st.working, #ext-pop .st.working { color: var(--t2); }
+#ext-box .st.done, #ext-pop .st.done { color: var(--green); }
+#ext-pop { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; background: var(--void); }
+#ext-pop[hidden] { display: none; }
+#ext-pop header { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: var(--navy); border-bottom: 1px solid var(--line); }
+#ext-pop header b { color: var(--t1); font-size: 14px; }
+#ext-pop header .st { font-size: 13px; }
+#ext-input { margin-left: auto; background: none; border: 1px solid var(--line-2); border-radius: 6px; color: var(--t3); min-height: 36px; padding: 2px 12px; }
+#ext-input.on { color: var(--green-ink); background: var(--green); border-color: var(--green); font-weight: 700; }
+#ext-input.nudge { border-color: var(--amber); color: var(--amber); }
+#ext-close { background: none; border: 1px solid var(--line-2); border-radius: 6px; color: var(--t3); min-height: 36px; padding: 2px 12px; }
+#ext-scroll { flex: 1; min-height: 0; overflow: auto; padding: 4px; -webkit-overflow-scrolling: touch; }
+#ext-term { width: max-content; }
+#ext-keys { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 8px; background: var(--navy); border-top: 1px solid var(--line); }
+#ext-keys button { flex: 1 1 auto; min-width: 44px; min-height: 40px; background: var(--raise); border: 1px solid var(--line-2); border-radius: 6px; color: var(--t1); font-size: 14px; }
+
+/* 결재·완료 웹푸시 켜기(push.js) — ext-box 안 한 줄 */
+#push-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--line); }
+#push-row[hidden] { display: none; }
+#push-row button { background: none; border: 1px solid var(--line-2); border-radius: 6px; color: var(--t2); min-height: 36px; padding: 2px 12px; font-size: 13px; }
+#push-row button[hidden] { display: none; }
+#push-toggle.on { color: var(--green); border-color: var(--green); }
+#push-row button:disabled { opacity: .6; }
+#push-msg { color: var(--t3); font-size: 12px; flex: 1 1 100%; }
+#push-msg:empty { display: none; }

@@ -21,8 +21,8 @@ if sys.platform != "win32":                       # pty·tmux attach 는 POSIX �
     import pty
     import termios
 
-from bridge import (agent_updates, browser_api, config, decisions, files, locate, preview_api, restore,
-                    security, sessions, settings, uploads)
+from bridge import (agent_updates, browser_api, config, decisions, extwin_api, files, locate, preview_api, push_api,
+                    restore, security, sessions, settings, uploads)
 
 if config.IS_WINDOWS:
     from bridge import winterm
@@ -139,6 +139,9 @@ STATIC_FILES = {
     "/files.js": ("files.js", "text/javascript"),
     "/browser.js": ("browser.js", "text/javascript"),
     "/remote.js": ("remote.js", "text/javascript"),
+    "/ext.js": ("ext.js", "text/javascript"),
+    "/push.js": ("push.js", "text/javascript"),
+    "/sw.js": ("sw.js", "text/javascript"),       # 웹푸시 서비스워커 — 루트 경로여야 범위가 앱 전체
     "/config.js": ("config.js", "text/javascript"),
     "/style.css": ("style.css", "text/css"),
     "/manifest.json": ("manifest.json", "application/manifest+json"),  # PWA 설치(독 앱)
@@ -975,6 +978,9 @@ def create_app() -> web.Application:
         app.on_cleanup.append(_stop_sessions)
     preview_api.add_routes(app)                   # 브라우저 패널 1단계 — /api/preview/* (별도 모듈)
     browser_api.add_routes(app)                   # 브라우저 패널 2단계 — /api/browser/*, /ws/browser/* (CDP 크롬)
+    if config.IS_WINDOWS:                         # 이미 떠 있는 PC 클로드 창 보기·조작 — /api/ext, /ws/ext/<pid> (AttachConsole)
+        extwin_api.add_routes(app)
+        push_api.add_routes(app)                  # 그 창들의 결재·완료를 폰에 웹푸시 — /api/push/*
     return app
 
 

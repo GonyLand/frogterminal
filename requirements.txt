@@ -1,4 +1,5 @@
 aiohttp==3.14.3
+pywebpush==2.5.0; sys_platform == "win32"   # 결재·완료 웹푸시(bridge/webpush.py) — cryptography·py-vapid·http-ece 를 함께 끌어온다
 # 윈도우판 세션 호스트(bridge/winmux.py): tmux 대신 ConPTY + 화면 모델 + 프로세스 조회
 pywinpty==3.0.5; sys_platform == "win32"
 pyte==0.8.2; sys_platform == "win32"
