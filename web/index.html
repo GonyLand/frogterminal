@@ -18,6 +18,11 @@
       href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
       integrity="sha384-uR1wgObmx89ZQ4VVXHdzjbDJZ1PvBK01K+E3GebmaBKdZ87qRJvBWPoPbzWeEd5T"
       crossorigin="anonymous">
+<!-- 폰 PC-창 보기용 한글 모노폰트 — D2Coding 이 없는 기기(폰)에서 한글이 영문 칸 폭의 2배로 안 떨어져 자간이 벌어졌다. ext.js 만 쓴다. -->
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@fontsource/nanum-gothic-coding@5.2.5/index.css"
+      integrity="sha384-8IddYTvFB3IIcffmpNVBZBqKGVQqpcZsk5w+Fxwc0zxgSJ0xP2aPXuRdN9AQKMsP"
+      crossorigin="anonymous">
 <link rel="stylesheet" href="style.css">
 <script>/* 테마는 CSS 보다 먼저 — 화이트·One Dark 설정 기기가 다크로 번쩍였다 바뀌지 않게 */
 try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
@@ -212,6 +217,7 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
 <div id="ext-pop" hidden>
   <header>
     <b id="ext-name">–</b><span id="ext-state"></span>
+    <button id="ext-zoom" aria-pressed="false" title="폭맞춤 = PC 창 전체 폭이 한 화면에 · 크게 = 글자를 키우고 옆으로 민다">폭맞춤</button>
     <button id="ext-input" aria-pressed="false" title="켜면 이 화면의 키가 PC 창에 그대로 들어간다">입력 잠김</button>
     <button id="ext-close">✕</button>
   </header>

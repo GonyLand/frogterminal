@@ -5,8 +5,15 @@
   'use strict';
   const STATE_LABEL = { working: '작업중…', waiting: '결재 필요', done: '완료 — 다음 지시 대기' };
   const POLL_MS = 7000;
-  const MIN_FONT = 8, MAX_FONT = 15;
+  const STATE_SHORT = { working: '작업중', waiting: '결재 필요', done: '완료' };     // 팝업 머리는 한 줄 — 긴 이름과 같은 줄에 앉는다
+  // 폭맞춤 = 창 폭 전체를 폰 한 화면에(글자는 작아진다) · 크게 = READ_FONT 로 키우고 옆으로 민다. 폰 폭 100열 안팎이면 맞춤은 6~7px.
+  const MIN_FONT = 5, MAX_FONT = 15, READ_FONT = 11;
+  // 폰엔 D2Coding 이 없어 한글이 영문 칸의 2배 폭으로 안 떨어지고 자간이 벌어졌다 → 한글이 정확히 2칸인 나눔고딕코딩(index.html, CDN)을 뒤에 둔다.
+  const EXT_FONT = '"D2Coding", "Nanum Gothic Coding", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace';
   const $ = (id) => document.getElementById(id);
+  let zoom = 'fit';                 // 'fit' | 'read' — 기기마다 기억한다
+  try { if (localStorage.getItem('frog.ext.zoom') === 'read') zoom = 'read'; } catch (_) { /* 저장소 막힘 — 맞춤으로 */ }
+  let cellRatio = 0.6;              // 글자 칸 폭 / 글자 크기 — 폰트마다 달라 화면에서 재서 고친다(fitFont)
   const box = $('ext-box'), list = $('ext-list'), toggle = $('ext-toggle');
   const pop = $('ext-pop');
   let windows = [];
@@ -78,8 +85,11 @@
     const w = windows.find((x) => x.pid === cur.pid);
     $('ext-name').textContent = w ? w.project : `pid ${cur.pid}`;
     const st = $('ext-state');
-    st.textContent = w ? (STATE_LABEL[w.state] || '') : '';
+    st.textContent = w ? (STATE_SHORT[w.state] || '') : '';
     st.className = 'st ' + (w ? w.state : '');
+    $('ext-zoom').textContent = zoom === 'read' ? '크게' : '폭맞춤';
+    $('ext-zoom').setAttribute('aria-pressed', String(zoom === 'read'));
+    $('ext-zoom').classList.toggle('on', zoom === 'read');
     $('ext-input').textContent = cur.input ? '입력 켜짐' : '입력 잠김';
     $('ext-input').setAttribute('aria-pressed', String(cur.input));
     $('ext-input').classList.toggle('on', cur.input);
@@ -88,14 +98,23 @@
   function fitFont() {
     if (!cur || !cur.term || !cur.cols) return;
     const avail = $('ext-scroll').clientWidth - 8;
-    const size = Math.max(MIN_FONT, Math.min(MAX_FONT, Math.floor(avail / (cur.cols * 0.6))));
+    const size = zoom === 'read' ? READ_FONT
+      : Math.max(MIN_FONT, Math.min(MAX_FONT, Math.floor(avail / (cur.cols * cellRatio) * 2) / 2));
     if (cur.term.options.fontSize !== size) cur.term.options.fontSize = size;
+    // 칸 폭은 폰트·기기 픽셀에 따라 0.6 이 아니다 — 그린 화면 폭으로 비율을 다시 재서 한 번 더 맞춘다(두 번까지만).
+    const me = cur, tries = (fitFont.tries = (fitFont.tries || 0) + 1);
+    requestAnimationFrame(() => {
+      const sc = cur === me && me.term ? $('ext-term').querySelector('.xterm-screen') : null;
+      if (!sc || !sc.offsetWidth || !me.cols) { fitFont.tries = 0; return; }
+      const r = sc.offsetWidth / (me.cols * me.term.options.fontSize);
+      if (r > 0.3 && r < 1 && Math.abs(r - cellRatio) > 0.03 && tries < 3) { cellRatio = r; fitFont(); } else fitFont.tries = 0;
+    });
   }
 
   function ensureTerm(cols, rows) {
     if (!cur.term) {
       const opts = typeof termOptions === 'function' ? termOptions() : {};
-      cur.term = new Terminal({ ...opts, cols, rows, scrollback: 0, cursorBlink: false, allowProposedApi: true });
+      cur.term = new Terminal({ ...opts, fontFamily: EXT_FONT, cols, rows, scrollback: 0, cursorBlink: false, allowProposedApi: true });
       cur.term.open($('ext-term'));
       cur.term.onData((d) => sendKeys(d));
     } else if (cur.cols !== cols || cur.rows !== rows) {
@@ -141,11 +160,15 @@
 
   function openExt(w) {
     closeExt();
-    cur = { pid: w.pid, term: null, ws: null, input: false, retry: 0, cols: 0, rows: 0, closing: false, gone: false };
+    const me = cur = { pid: w.pid, term: null, ws: null, input: false, retry: 0, cols: 0, rows: 0, closing: false, gone: false };
     pop.hidden = false;
     $('ext-term').replaceChildren();
     paintHead();
-    connect();
+    // 글자 칸 폭은 터미널을 여는 순간 잰다 — 웹폰트가 아직 안 왔으면 엉뚱한 폭으로 굳는다. 영문·한글 조각만 먼저 받고(최대 2초) 연다.
+    const fontsReady = document.fonts && document.fonts.load
+      ? Promise.race([document.fonts.load('14px "Nanum Gothic Coding"', 'A가'), new Promise((r) => setTimeout(r, 2000))]).catch(() => {})
+      : Promise.resolve();
+    fontsReady.then(() => { if (cur === me && !me.closing) connect(); });
   }
 
   function closeExt() {
@@ -159,6 +182,12 @@
   }
 
   $('ext-close').addEventListener('click', closeExt);
+  $('ext-zoom').addEventListener('click', () => {
+    zoom = zoom === 'read' ? 'fit' : 'read';
+    try { localStorage.setItem('frog.ext.zoom', zoom); } catch (_) { /* 저장소 막힘 — 이번만 */ }
+    paintHead();
+    fitFont();
+  });
   $('ext-input').addEventListener('click', () => {
     if (!cur) return;
     cur.input = !cur.input;

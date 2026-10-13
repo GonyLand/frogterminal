@@ -76,3 +76,34 @@ def test_list_windows_marks_working_when_conversation_moved_on(monkeypatch):
 def test_registry_refuses_pid_not_in_list(monkeypatch):
     monkeypatch.setattr(extwin.CACHE, "get", lambda: [{"pid": 10}])
     assert extwin.REGISTRY.get_or_create(99) is None                                 # 아무 프로세스에나 붙지 않는다
+
+
+def test_list_refresh_and_open_do_not_deadlock(monkeypatch):
+    """목록 갱신(캐시 락 → is_open 이 레지스트리 락)과 창 열기(get_or_create)가 겹쳐도 멈추지 않는다.
+    열기가 레지스트리 락을 쥔 채 캐시 락을 기다리면 서로 물려, 폰에서 창을 여는 순간 API 스레드가 전부 막혔다(실측 — /api/ext · /api/push/key 가 응답 없음)."""
+    import threading
+    import time
+    import types
+    monkeypatch.setattr(extwin, "CACHE", extwin._Cache())
+    monkeypatch.setattr(extwin, "REGISTRY", extwin._Registry())
+    monkeypatch.setattr(decisions, "_load_cards", lambda: [_card(10, "t10", "idle")])
+    monkeypatch.setattr(sessions, "process_starts", lambda: {10: "t10"})
+
+    def slow_context(card):
+        time.sleep(0.4)                                                              # 갱신이 캐시 락을 쥔 채 is_open 에 닿기 전의 틈
+        return {"asked": "", "said": "", "lastAt": ""}
+    monkeypatch.setattr(decisions, "context_for", slow_context)
+    monkeypatch.setattr(extwin, "ExtWindow", lambda pid: types.SimpleNamespace(pid=pid, alive=True, subscribers=set()))
+    done: dict[str, object] = {}
+
+    def run(name, fn):
+        done[name] = fn()
+    refresh = threading.Thread(target=run, args=("refresh", extwin.CACHE.get), daemon=True)
+    refresh.start()
+    time.sleep(0.1)
+    opener = threading.Thread(target=run, args=("open", lambda: extwin.REGISTRY.get_or_create(10)), daemon=True)
+    opener.start()
+    refresh.join(3)
+    opener.join(3)
+    assert not refresh.is_alive() and not opener.is_alive(), "교착"
+    assert done["open"] is not None

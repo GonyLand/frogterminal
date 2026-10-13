@@ -257,8 +257,13 @@ class _Registry:
             w = self._wins.get(pid)
             if w and w.alive:
                 return w
-            if not any(x["pid"] == pid for x in CACHE.get()):
-                return None
+        # 목록 확인은 레지스트리 락 밖에서 — 목록 갱신은 캐시 락을 쥔 채 is_open(레지스트리 락)을 부르니, 반대 순서로 잡으면 서로 물려 API 스레드가 다 멎는다.
+        if not any(x["pid"] == pid for x in CACHE.get()):
+            return None
+        with self._lock:
+            w = self._wins.get(pid)
+            if w and w.alive:
+                return w                                     # 그 사이 다른 연결이 먼저 열었다
             w = self._wins[pid] = ExtWindow(pid)
             return w
 
