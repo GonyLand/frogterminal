@@ -838,7 +838,7 @@ button#fp-close:hover { color: var(--t1); }
 #push-row[hidden] { display: none; }
 #push-row button { background: none; border: 1px solid var(--line-2); border-radius: 6px; color: var(--t2); min-height: 36px; padding: 2px 12px; font-size: 13px; }
 #push-row button[hidden] { display: none; }
-#push-toggle.on { color: var(--green); border-color: var(--green); }
+#push-toggle.on, #push-done.on { color: var(--green); border-color: var(--green); }
 #push-row button:disabled { opacity: .6; }
 #push-msg { color: var(--t3); font-size: 12px; flex: 1 1 100%; }
 #push-msg:empty { display: none; }

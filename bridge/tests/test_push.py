@@ -42,11 +42,63 @@ def test_한_번_출렁이고_돌아오면_안_운다():
 
 
 def test_하나만_끝나면_개별_완료_알림():
-    t = notifier.Tracker()
+    t = notifier.Tracker(done_on=True, min_turn=0)
     t.step([win(1, "working", "a"), win(2, "working", "b")])
     t.step([win(1, "done", "a", said="끝"), win(2, "working", "b")])
     out = t.step([win(1, "done", "a", said="끝"), win(2, "working", "b")])
     assert [a["kind"] for a in out] == ["done"] and out[0]["title"].endswith("a") and out[0]["body"] == "끝"
+
+
+def test_개별_완료_알림은_기본으로_꺼져_있다():
+    t = notifier.Tracker(min_turn=0)
+    t.step([win(1, "working", "a"), win(2, "working", "b")])
+    t.step([win(1, "done", "a"), win(2, "working", "b")])
+    assert t.step([win(1, "done", "a"), win(2, "working", "b")]) == []                     # 결재 대기·전부 끝남만 온다
+
+
+def test_켜_둬도_짧은_턴은_건너뛴다():
+    t = notifier.Tracker(done_on=True, min_turn=180)
+    t.step([win(1, "working", "a"), win(2, "working", "b")], now=0)
+    t.step([win(1, "done", "a"), win(2, "working", "b")], now=100)
+    assert t.step([win(1, "done", "a"), win(2, "working", "b")], now=104) == []            # 104초 만에 끝난 턴
+    t.step([win(1, "working", "a"), win(2, "working", "b")], now=110)
+    t.step([win(1, "working", "a"), win(2, "working", "b")], now=114)
+    t.step([win(1, "done", "a"), win(2, "working", "b")], now=400)
+    out = t.step([win(1, "done", "a"), win(2, "working", "b")], now=404)                    # 290초 일한 턴
+    assert [a["kind"] for a in out] == ["done"]
+
+
+def test_결재를_거쳐도_턴_시작은_처음_일한_때():
+    t = notifier.Tracker(done_on=True, min_turn=180)
+    t.step([win(1, "working", "a"), win(2, "working", "b")], now=0)
+    for now in (100, 104):
+        t.step([win(1, "waiting", "a"), win(2, "working", "b")], now=now)
+    for now in (150, 154):
+        t.step([win(1, "working", "a"), win(2, "working", "b")], now=now)
+    t.step([win(1, "done", "a"), win(2, "working", "b")], now=200)
+    out = t.step([win(1, "done", "a"), win(2, "working", "b")], now=204)
+    assert [a["kind"] for a in out] == ["done"]                                              # 204초 — 결재 뒤 재개로 시계가 새로 시작하지 않는다
+
+
+def test_창_알림은_pid_를_싣고_누르면_그_창으로_간다():
+    t = notifier.Tracker(done_on=True, min_turn=0)
+    t.step([win(7, "working", "a"), win(9, "working", "b")])
+    t.step([win(7, "waiting", "a"), win(9, "working", "b")])
+    (waiting,) = t.step([win(7, "waiting", "a"), win(9, "working", "b")])
+    p = notifier.payload_for(waiting)
+    assert p["pid"] == 7 and p["url"] == "/?ext=7" and p["kind"] == "waiting" and p["tag"] == "ext-wait-7"
+    t.step([win(7, "done", "a"), win(9, "working", "b")])
+    (fin,) = t.step([win(7, "done", "a"), win(9, "working", "b")])
+    assert notifier.payload_for(fin)["url"] == "/?ext=7"
+
+
+def test_전부_끝났다는_특정_창이_아니라_첫_화면으로():
+    t = notifier.Tracker()
+    t.step([win(1, "working", "a")])
+    t.step([win(1, "done", "a")])
+    (all_done,) = t.step([win(1, "done", "a")])
+    p = notifier.payload_for(all_done)
+    assert p["url"] == "/" and p["pid"] == 0
 
 
 def test_마지막이_끝나면_전부_끝났다_한_통으로_합친다():
@@ -109,6 +161,7 @@ def test_키가_없거나_이상하면_거절():
 def store(tmp_path, monkeypatch):
     monkeypatch.setattr(webpush, "SUBS_FILE", tmp_path / "subs.json")
     monkeypatch.setattr(webpush, "VAPID_FILE", tmp_path / "vapid.pem")
+    monkeypatch.setattr(webpush, "PREFS_FILE", tmp_path / "prefs.json")
     return tmp_path
 
 
@@ -165,6 +218,22 @@ def test_구독이_없으면_보내지_않는다(store):
     assert webpush.send_all({"title": "t"}) == {"sent": 0, "removed": 0, "failed": 0}
 
 
+def test_알림_설정은_기본이_꺼짐이고_알려진_칸의_불리언만_받는다(store):
+    assert webpush.load_prefs() == {"done": False}
+    assert webpush.set_prefs({"done": True, "evil": True}) == {"done": True}              # 모르는 칸은 버린다
+    assert webpush.load_prefs() == {"done": True}
+    assert webpush.set_prefs({"done": "yes"}) == {"done": True}                             # bool 이 아니면 그대로 둔다
+    assert webpush.set_prefs([1]) == {"done": True}
+    assert webpush.set_prefs({"done": False}) == {"done": False}
+
+
+def test_망가진_설정_파일은_기본값(store):
+    (store / "prefs.json").write_text("{not json", encoding="utf-8")
+    assert webpush.load_prefs() == {"done": False}
+    (store / "prefs.json").write_text('{"done": 1}', encoding="utf-8")
+    assert webpush.load_prefs() == {"done": False}                                          # 1 은 bool 이 아니다
+
+
 # ── HTTP ─────────────────────────────────────────────────────────────────────
 async def test_api_구독_왕복(aiohttp_client, store):
     pytest.importorskip("py_vapid")
@@ -180,6 +249,17 @@ async def test_api_구독_왕복(aiohttp_client, store):
     assert (await c.post("/api/push/subscribe", json=[1])).status == 400
     r = await (await c.post("/api/push/unsubscribe", json={"endpoint": GOOD["endpoint"]})).json()
     assert r == {"ok": True, "removed": True}
+
+
+async def test_api_알림_설정_왕복(aiohttp_client, store):
+    app = web.Application()
+    push_api.add_routes(app)
+    c = await aiohttp_client(app)
+    assert await (await c.get("/api/push/prefs")).json() == {"done": False}
+    assert await (await c.post("/api/push/prefs", json={"done": True})).json() == {"done": True}
+    assert await (await c.get("/api/push/prefs")).json() == {"done": True}
+    assert (await c.post("/api/push/prefs", data="not json")).status == 400
+    assert (await c.post("/api/push/prefs", json=[1])).status == 400
 
 
 def test_서비스워커와_푸시_스크립트는_정적_목록에_있고_파일이_있다():

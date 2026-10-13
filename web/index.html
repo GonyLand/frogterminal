@@ -80,7 +80,7 @@ try { var frogUi = JSON.parse(localStorage.getItem("frog.prefs") || "{}").ui;
   <section id="ext-box" hidden>
     <button id="ext-toggle" aria-expanded="true">PC 클로드 창 –</button>
     <div id="push-row" hidden>                   <!-- 결재 대기·완료 웹푸시 — push.js 가 지원하는 브라우저에서만 보인다 -->
-      <button id="push-toggle">🔕 알림 켜기</button><button id="push-test" hidden>시험</button><span id="push-msg"></span>
+      <button id="push-toggle">🔕 알림 켜기</button><button id="push-test" hidden>시험</button><button id="push-done" hidden>창마다 완료 알림 꺼짐</button><span id="push-msg"></span>
     </div>
     <ul id="ext-list"></ul>
   </section>

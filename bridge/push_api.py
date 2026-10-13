@@ -36,6 +36,15 @@ async def api_unsubscribe(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "removed": removed})
 
 
+async def api_prefs_get(request: web.Request) -> web.Response:
+    return web.json_response(await asyncio.to_thread(webpush.load_prefs))
+
+
+async def api_prefs_set(request: web.Request) -> web.Response:
+    data = await _json(request)
+    return web.json_response(await asyncio.to_thread(webpush.set_prefs, data))
+
+
 async def api_test(request: web.Request) -> web.Response:
     res = await asyncio.to_thread(webpush.send_all, {"title": "frogterminal 알림 시험", "body": "이 알림이 보이면 결재·완료 알림이 간다",
                                                      "tag": "push-test", "kind": "test", "url": "/"})
@@ -46,5 +55,7 @@ def add_routes(app: web.Application) -> None:
     app.router.add_get("/api/push/key", api_key)
     app.router.add_post("/api/push/subscribe", api_subscribe)
     app.router.add_post("/api/push/unsubscribe", api_unsubscribe)
+    app.router.add_get("/api/push/prefs", api_prefs_get)
+    app.router.add_post("/api/push/prefs", api_prefs_set)
     app.router.add_post("/api/push/test", api_test)
     notifier.setup(app)                              # PC 클로드 창 상태 전이 감시 → 푸시

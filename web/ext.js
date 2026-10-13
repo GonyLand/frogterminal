@@ -60,8 +60,8 @@
     document.title = (todo ? `(${todo}) ` : '') + 'frogterminal';
   }
 
-  async function refresh() {
-    if (document.hidden) return;
+  async function refresh(force) {
+    if (document.hidden && !force) return;
     try {
       const r = await fetch('/api/ext', { credentials: 'same-origin' });
       if (!r.ok) return;
@@ -204,7 +204,26 @@
   });
   window.addEventListener('resize', fitFont);
 
-  refresh();
+  // 알림을 눌러 들어온 경우 — 그 창(pid)의 팝업을 바로 연다. 목록에 아직 없으면(새 창·갓 켠 앱) 한 번 받아서 다시 찾는다.
+  async function openByPid(pid) {
+    pid = Number(pid);
+    if (!pid || (cur && cur.pid === pid)) return;
+    let w = windows.find((x) => x.pid === pid);
+    if (!w) { await refresh(true); w = windows.find((x) => x.pid === pid); }
+    if (w) openExt(w);                                  // 그새 끝난 창이면 목록만 보인다
+  }
+
+  // 알림 클릭 — 열려 있는 탭엔 서비스워커가 메시지로, 앱이 꺼져 있었으면 /?ext=<pid> 로 새로 열린다
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      const m = e.data;
+      if (m && m.type === 'frog-open-ext') openByPid(m.pid);
+    });
+  }
+  const want = new URLSearchParams(location.search).get('ext');
+  if (want) { try { history.replaceState(null, '', location.pathname); } catch (_) { /* 주소줄 못 바꿔도 팝업은 열린다 */ } }   // 새로고침이 팝업을 또 열지 않게
+
+  refresh(!!want).then(() => { if (want) openByPid(want); });
   setInterval(refresh, POLL_MS);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   window.extWindows = () => windows;   // 시험·디버깅용

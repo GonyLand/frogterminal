@@ -6,6 +6,7 @@
   if (!row || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;   // 못 쓰는 브라우저엔 줄이 안 보인다
   const btn = document.getElementById('push-toggle');
   const test = document.getElementById('push-test');
+  const done = document.getElementById('push-done');   // 창 하나가 끝날 때마다 알림 — 기본 꺼짐(결재 대기 + 전부 끝남만)
   const msg = document.getElementById('push-msg');
   const JSON_POST = { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } };
 
@@ -35,9 +36,23 @@
     btn.classList.toggle('on', !!sub && !denied);
     btn.textContent = denied ? '🔕 알림 차단됨' : sub ? '🔔 알림 켜짐 — 끄기' : '🔕 알림 켜기';
     test.hidden = !sub || denied;
+    done.hidden = !sub || denied;
     if (denied) say('브라우저 사이트 설정에서 알림을 허용해 줘');
     row.hidden = false;
+    if (sub && !denied) paintDone();
     return sub;
+  }
+
+  async function paintDone(next) {
+    try {
+      const r = next === undefined ? await fetch('/api/push/prefs', { credentials: 'same-origin' })
+        : await fetch('/api/push/prefs', { ...JSON_POST, body: JSON.stringify({ done: next }) });
+      if (!r.ok) return;
+      const on = !!(await r.json()).done;
+      done.classList.toggle('on', on);
+      done.textContent = on ? '창마다 완료 알림 켜짐' : '창마다 완료 알림 꺼짐';
+      done.dataset.on = on ? '1' : '';
+    } catch (_) { /* 다음에 다시 */ }
   }
 
   async function enable() {
@@ -85,6 +100,12 @@
       say('시험 실패 — ' + (e && e.message ? e.message : e));
     }
     test.disabled = false;
+  });
+
+  done.addEventListener('click', async () => {
+    done.disabled = true;
+    await paintDone(!done.dataset.on);
+    done.disabled = false;
   });
 
   // 열 때마다: 이미 켜 둔 구독이면 브릿지 명부에 다시 알려 둔다(명부가 비워졌어도 복구) · 서비스워커도 최신으로

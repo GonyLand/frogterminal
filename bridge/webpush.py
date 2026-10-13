@@ -26,6 +26,8 @@ log = logging.getLogger("frogterminal.webpush")
 
 VAPID_FILE = config.APP_DIR / "vapid.pem"
 SUBS_FILE = config.APP_DIR / "push-subs.json"
+PREFS_FILE = config.APP_DIR / "push-prefs.json"
+PREF_DEFAULTS = {"done": False}                    # done = 창 하나가 끝날 때마다 알림 — 꺼 두면 결재 대기 + 전부 끝남만 온다
 VAPID_SUB = "mailto:frogterminal@localhost"        # VAPID 'sub' 클레임 — 푸시 서비스가 남용 때 연락할 곳(자기 PC 용이라 형식만 맞춘다)
 MAX_SUBS = 8                                       # 폰·PC 브라우저 합쳐 이 정도면 충분하다
 PAYLOAD_LIMIT = 2000                               # 푸시 본문 한도는 4KB 안쪽 — 넉넉히 줄인다
@@ -134,6 +136,28 @@ def remove_sub(endpoint: object) -> bool:
 
 def has_subs() -> bool:
     return bool(load_subs())
+
+
+# ── 알림 설정 ────────────────────────────────────────────────────────────────
+def load_prefs() -> dict:
+    try:
+        data = json.loads(PREFS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    return {k: data[k] if isinstance(data.get(k), bool) else v for k, v in PREF_DEFAULTS.items()}
+
+
+def set_prefs(raw: object) -> dict:
+    """알려진 칸의 bool 값만 받아 저장하고, 합쳐진 설정을 돌려준다(모르는 칸·다른 타입은 무시)."""
+    with _lock:
+        prefs = load_prefs()
+        if isinstance(raw, dict):
+            prefs.update({k: raw[k] for k in PREF_DEFAULTS if isinstance(raw.get(k), bool)})
+        PREFS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _atomic_write(PREFS_FILE, json.dumps(prefs, ensure_ascii=False, indent=1).encode("utf-8"))
+    return prefs
 
 
 # ── 보내기 ───────────────────────────────────────────────────────────────────
