@@ -1,4 +1,4 @@
-# frogterminal 브릿지 감시 실행기(윈도우). 작업 스케줄러가 로그온 때 이 파일을 숨김 창으로 띄운다.
+# frogterminal 브릿지 감시 실행기(윈도우). 작업 스케줄러가 로그온 때 이 파일을 `conhost --headless` 로(창 없이) 띄운다.
 # 브릿지가 죽으면 5초 뒤 다시 띄운다. 로그는 ~/.frogterminal/bridge.log (5MB 넘으면 .old 로 한 번 접는다).
 # 손으로 한 번만 돌리고 싶으면: pwsh -File scripts\windows\run-bridge.ps1  (창을 닫으면 브릿지도 끝난다)
 $ErrorActionPreference = 'Stop'

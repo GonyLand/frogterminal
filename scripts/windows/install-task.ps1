@@ -15,8 +15,11 @@ if ($Uninstall) {
     Write-Output "등록 해제: $name (떠 있는 브릿지는 scripts\windows\restart.ps1 -Stop 으로 끈다)"
     return
 }
-$action = New-ScheduledTaskAction -Execute $pwsh -WorkingDirectory $repo `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$runner`""
+# 창이 아예 없어야 한다: Windows Terminal 이 기본 터미널이면 `pwsh -WindowStyle Hidden` 도 터미널 창이 하나 뜨고(닫으면 감시 실행기가
+# 0xC000013A 로 죽어 Worker Health 경보), 그래서 conhost --headless 로 띄운다(콘솔 창 없음 · 터미널 위임 없음).
+$conhost = Join-Path $env:WINDIR 'System32\conhost.exe'
+$action = New-ScheduledTaskAction -Execute $conhost -WorkingDirectory $repo `
+    -Argument "--headless `"$pwsh`" -NoProfile -ExecutionPolicy Bypass -File `"$runner`""
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
     -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew `
